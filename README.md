@@ -2,7 +2,7 @@
 
 A futuristic, user-authenticated AI journaling command center built for **Farjana Ferdausi** to track her journey transitioning from 14+ years in Human Resources to AI/ML Engineering.
 
-🔗 Live Web App URL : https://ai-ml-learning-career-journal.ai.studio
+🔗 Live Web App URL : https://ai-ml-learning-career-journal-1.ai.studio
 
 ---
 
