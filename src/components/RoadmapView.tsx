@@ -13,17 +13,30 @@ import {
   BrainCircuit,
   Award
 } from 'lucide-react';
-import type { CareerProgressData } from '../types';
+import type { CareerProgressData, CareerIntelligenceData } from '../types';
+import { CurriculumSkeleton } from './common/LoadingState';
+import { CareerIntelligenceCard } from './CareerIntelligenceCard';
 
 interface RoadmapViewProps {
   careerData: CareerProgressData;
   onSelectMilestonePrompt: (prompt: string) => void;
+  careerIntelligence?: CareerIntelligenceData | null;
+  isLoadingIntelligence?: boolean;
+  onRefreshIntelligence?: () => void;
+  isLoading?: boolean;
 }
 
 export const RoadmapView: React.FC<RoadmapViewProps> = ({
   careerData,
-  onSelectMilestonePrompt
+  onSelectMilestonePrompt,
+  careerIntelligence,
+  isLoadingIntelligence = false,
+  onRefreshIntelligence,
+  isLoading = false
 }) => {
+  if (isLoading) {
+    return <CurriculumSkeleton />;
+  }
   const roadmapStages = [
     {
       phase: 'Phase 1: Foundations',
@@ -130,6 +143,14 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* AI Career Intelligence Engine */}
+      <CareerIntelligenceCard 
+        careerData={careerIntelligence || null}
+        loading={isLoadingIntelligence}
+        onRefresh={onRefreshIntelligence || (() => {})}
+        onDiscussProjectWithCoach={onSelectMilestonePrompt}
+      />
 
       {/* Roadmap Phase Timeline */}
       <div className="space-y-4">

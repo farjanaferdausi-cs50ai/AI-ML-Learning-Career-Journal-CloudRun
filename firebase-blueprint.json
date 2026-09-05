@@ -1,0 +1,263 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile containing career transition details from HR to AI/ML",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 150 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "currentStage": { "type": "string", "maxLength": 200 },
+        "targetRole": { "type": "string", "maxLength": 100 },
+        "yearsInHR": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "currentStage", "targetRole"]
+    },
+    "LearningProgress": {
+      "title": "LearningProgress",
+      "description": "Overall learning metrics, streaks, and curriculum completion stats",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "progressPercentage": { "type": "number" },
+        "lessonsCompleted": { "type": "number" },
+        "totalLessons": { "type": "number" },
+        "totalProjects": { "type": "number" },
+        "projectsThisMonth": { "type": "number" },
+        "skillsMasteryPercentage": { "type": "number" },
+        "strongSkillsCount": { "type": "number" },
+        "currentStreakDays": { "type": "number" },
+        "bestStreakDays": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "progressPercentage", "lessonsCompleted"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Curriculum course or learning platform module",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 150 },
+        "role": { "type": "string", "maxLength": 150 },
+        "focus": { "type": "string", "maxLength": 300 },
+        "status": { "type": "string", "enum": ["In Progress", "Active", "Completed"] },
+        "progressPercentage": { "type": "number" },
+        "badgeColor": { "type": "string", "maxLength": 30 },
+        "link": { "type": "string", "maxLength": 500 },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["name", "status", "progressPercentage"]
+    },
+    "Skill": {
+      "title": "Skill",
+      "description": "Technical skill competency evaluation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "skill": { "type": "string", "maxLength": 100 },
+        "level": { "type": "number" },
+        "category": { "type": "string", "maxLength": 50 },
+        "platform": { "type": "string", "maxLength": 100 },
+        "verified": { "type": "boolean" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["skill", "level", "category"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Portfolio project entry with code, architecture, and live demo links",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 150 },
+        "role": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "maxLength": 50 },
+        "statusColor": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "stack": { "type": "array" },
+        "achievements": { "type": "array" },
+        "prompt": { "type": "string", "maxLength": 1000 },
+        "githubUrl": { "type": "string", "maxLength": 500 },
+        "liveUrl": { "type": "string", "maxLength": 500 },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["title", "role", "description"]
+    },
+    "Goal": {
+      "title": "Goal",
+      "description": "Weekly or milestone learning objective",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 300 },
+        "category": { "type": "string", "maxLength": 50 },
+        "targetDate": { "type": "string", "maxLength": 50 },
+        "completed": { "type": "boolean" },
+        "completedAt": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["title", "completed"]
+    },
+    "JournalEntry": {
+      "title": "JournalEntry",
+      "description": "Interactive study session log with AI dialogue and synthesized notes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "conversation": { "type": "array" },
+        "summary": { "type": "object" },
+        "topics": { "type": "array" },
+        "difficulty": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["userId", "conversation", "summary", "createdAt"]
+    },
+    "StudySession": {
+      "title": "StudySession",
+      "description": "Daily study track session with hours logged and milestones",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "dayNumber": { "type": "number" },
+        "dateLabel": { "type": "string", "maxLength": 100 },
+        "isToday": { "type": "boolean" },
+        "isYesterday": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["completed", "in_progress", "upcoming"] },
+        "title": { "type": "string", "maxLength": 200 },
+        "focusTopics": { "type": "array" },
+        "hoursLogged": { "type": "number" },
+        "milestone": { "type": "string", "maxLength": 400 },
+        "platform": { "type": "string", "maxLength": 150 },
+        "journalLogged": { "type": "boolean" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["dayNumber", "title", "status"]
+    },
+    "AIRecommendation": {
+      "title": "AIRecommendation",
+      "description": "Personalized coaching suggestions and next steps for AI/ML mastery",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 100 },
+        "advice": { "type": "string", "maxLength": 1000 },
+        "actionableSteps": { "type": "array" },
+        "relatedTopics": { "type": "array" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["title", "advice"]
+    },
+    "Topic": {
+      "title": "Topic",
+      "description": "Active technical study topic",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["name", "isActive"]
+    },
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "Root user account record with role-based access control",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 150 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "number" },
+        "lastActiveAt": { "type": "number" },
+        "totalSessionsCount": { "type": "number" }
+      },
+      "required": ["userId", "role"]
+    },
+    "AdminAuditLog": {
+      "title": "AdminAuditLog",
+      "description": "Immutable security and role change audit record created server-side",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "adminUid": { "type": "string", "maxLength": 128 },
+        "adminEmail": { "type": "string", "maxLength": 150 },
+        "targetUserId": { "type": "string", "maxLength": 128 },
+        "targetUserEmail": { "type": "string", "maxLength": 150 },
+        "action": { "type": "string", "maxLength": 100 },
+        "previousRole": { "type": "string", "maxLength": 50 },
+        "newRole": { "type": "string", "maxLength": 50 },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["id", "adminUid", "targetUserId", "action", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "UserAccount" },
+      "description": "User account document containing RBAC role assignment"
+    },
+    "/admin_audit_log/{logId}": {
+      "schema": { "$ref": "AdminAuditLog" },
+      "description": "Server-authored audit logs for administrative operations"
+    },
+    "/users/{userId}/profile/careerProgress": {
+      "schema": { "$ref": "UserProfile" },
+      "description": "User profile and overall career progression status"
+    },
+    "/users/{userId}/learningProgress/overview": {
+      "schema": { "$ref": "LearningProgress" },
+      "description": "Aggregated learning stats and study metrics"
+    },
+    "/users/{userId}/courses/{courseId}": {
+      "schema": { "$ref": "Course" },
+      "description": "Active courses across Ostad, CodeBasics, Google Cloud, and CodeAlpha"
+    },
+    "/users/{userId}/skills/{skillId}": {
+      "schema": { "$ref": "Skill" },
+      "description": "Competency matrix skills with percentage mastery"
+    },
+    "/users/{userId}/projects/{projectId}": {
+      "schema": { "$ref": "Project" },
+      "description": "Portfolio projects and code repositories"
+    },
+    "/users/{userId}/goals/{goalId}": {
+      "schema": { "$ref": "Goal" },
+      "description": "Weekly and milestone study goals"
+    },
+    "/users/{userId}/journalEntries/{entryId}": {
+      "schema": { "$ref": "JournalEntry" },
+      "description": "Archived study dialogue reflections and takeaways"
+    },
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": { "$ref": "JournalEntry" },
+      "description": "Completed coaching sessions"
+    },
+    "/users/{userId}/studySessions/{sessionId}": {
+      "schema": { "$ref": "StudySession" },
+      "description": "Daily study track timeline items"
+    },
+    "/users/{userId}/aiRecommendations/{recId}": {
+      "schema": { "$ref": "AIRecommendation" },
+      "description": "Targeted AI mentor recommendations"
+    },
+    "/users/{userId}/topics/{topicId}": {
+      "schema": { "$ref": "Topic" },
+      "description": "Focus tags for the AI coach and curriculum"
+    }
+  }
+}

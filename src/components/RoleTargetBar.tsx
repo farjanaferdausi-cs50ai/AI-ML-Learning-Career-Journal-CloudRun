@@ -55,6 +55,14 @@ export const RoleTargetBar: React.FC<RoleTargetBarProps> = ({
           </div>
         </div>
 
+        {/* Study Track Day Badge */}
+        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#081538] border border-cyan-400/40 shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+          <span className="w-2 h-2 rounded-full bg-[#00F0FF] animate-ping" />
+          <span className="text-[10px] font-mono text-cyan-300 font-bold uppercase">
+            STUDY TRACK: DAY 2 (TODAY)
+          </span>
+        </div>
+
       </div>
 
       {/* Right Side: Mission Level Up */}

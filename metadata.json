@@ -1,7 +1,7 @@
 {
   "name": "AI/ML Learning & Career Journal",
   "description": "Futuristic AI journaling and career transition command center for tracking the journey from 14+ years in HR to AI/ML engineering, powered by Gemini and Firebase.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
 

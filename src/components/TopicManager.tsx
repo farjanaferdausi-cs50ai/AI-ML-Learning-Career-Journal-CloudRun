@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
   X, 
@@ -13,6 +13,9 @@ import {
   Variable
 } from 'lucide-react';
 import type { Topic } from '../types';
+import { TopicSkeleton } from './common/LoadingState';
+import { EmptyState } from './common/EmptyState';
+import { ErrorState } from './common/ErrorState';
 
 interface TopicManagerProps {
   topics: Topic[];
@@ -103,6 +106,20 @@ export const TopicManager: React.FC<TopicManagerProps> = ({
   const [errorMsg, setErrorMsg] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Close add topic form on Escape key
+  useEffect(() => {
+    if (!isAdding) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsAdding(false);
+        setNewTopicName('');
+        setErrorMsg('');
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isAdding]);
+
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = newTopicName.trim();
@@ -149,16 +166,25 @@ export const TopicManager: React.FC<TopicManagerProps> = ({
         </div>
 
         {/* Add Custom Topic Button */}
-        {!isAdding && (
-          <button
-            id="add-custom-topic-btn"
-            onClick={() => setIsAdding(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0e1633] hover:bg-[#152047] border border-[#22356b] text-cyan-300 hover:text-cyan-200 text-xs font-mono font-semibold transition-all cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5 text-cyan-400" />
-            <span>+ Add Custom Topic</span>
-          </button>
-        )}
+        <button
+          id="add-custom-topic-btn"
+          onClick={() => {
+            setIsAdding(prev => !prev);
+            if (isAdding) {
+              setNewTopicName('');
+              setErrorMsg('');
+            }
+          }}
+          aria-expanded={isAdding}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono font-semibold transition-all cursor-pointer ${
+            isAdding
+              ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-[0_0_8px_rgba(0,240,255,0.3)]'
+              : 'bg-[#0e1633] hover:bg-[#152047] border-[#22356b] text-cyan-300 hover:text-cyan-200'
+          }`}
+        >
+          {isAdding ? <X className="w-3.5 h-3.5 text-cyan-400" /> : <Plus className="w-3.5 h-3.5 text-cyan-400" />}
+          <span>{isAdding ? 'Close' : '+ Add Custom Topic'}</span>
+        </button>
       </div>
 
       {/* Inline Add Topic Input Form */}
@@ -211,50 +237,63 @@ export const TopicManager: React.FC<TopicManagerProps> = ({
         </form>
       )}
 
-      {/* Topic Chips Row */}
-      <div className="flex flex-wrap gap-2.5">
-        {topics.map((topic, idx) => {
-          const isActive = topic.isActive;
-          const style = getTopicStyling(topic.name, idx);
+      {/* Topic Chips Row or Skeleton / Empty State */}
+      {isLoading ? (
+        <TopicSkeleton count={6} />
+      ) : topics.length === 0 ? (
+        <EmptyState
+          variant="topics"
+          compact
+          title="No Active Study Topics"
+          description="Add machine learning and deep learning topics to focus your AI coaching dialogues."
+          actionLabel="+ Add First Topic"
+          onAction={() => setIsAdding(prev => !prev)}
+        />
+      ) : (
+        <div className="flex flex-wrap gap-2.5">
+          {topics.map((topic, idx) => {
+            const isActive = topic.isActive;
+            const style = getTopicStyling(topic.name, idx);
 
-          return (
-            <div
-              key={topic.id || `topic-${topic.name}-${idx}`}
-              id={`topic-chip-${topic.id || idx}`}
-              className={`group relative inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono transition-all duration-200 cursor-pointer border ${
-                isActive
-                  ? `${style.bg} ${style.border} ${style.text} shadow-[0_0_12px_rgba(0,0,0,0.5)]`
-                  : 'bg-[#090e1e] border-[#151f3d] text-slate-400 opacity-60 hover:opacity-100 hover:border-[#223363]'
-              }`}
-            >
-              {/* Click to Toggle */}
-              <button
-                type="button"
-                onClick={() => onToggleTopic(topic.id, isActive)}
-                className="flex items-center gap-2 text-left cursor-pointer focus:outline-none"
+            return (
+              <div
+                key={topic.id || `topic-${topic.name}-${idx}`}
+                id={`topic-chip-${topic.id || idx}`}
+                className={`group relative inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono transition-all duration-200 cursor-pointer border ${
+                  isActive
+                    ? `${style.bg} ${style.border} ${style.text} shadow-[0_0_12px_rgba(0,0,0,0.5)]`
+                    : 'bg-[#090e1e] border-[#151f3d] text-slate-400 opacity-60 hover:opacity-100 hover:border-[#223363]'
+                }`}
               >
-                {style.icon}
-                <span className="font-semibold">{topic.name}</span>
-              </button>
+                {/* Click to Toggle */}
+                <button
+                  type="button"
+                  onClick={() => onToggleTopic(topic.id, isActive)}
+                  className="flex items-center gap-2 text-left cursor-pointer focus:outline-none"
+                >
+                  {style.icon}
+                  <span className="font-semibold">{topic.name}</span>
+                </button>
 
-              {/* Delete 'X' Button on Hover */}
-              <button
-                type="button"
-                id={`delete-topic-${topic.id}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteTopic(topic.id);
-                }}
-                title={`Remove topic "${topic.name}"`}
-                className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/20 transition-all cursor-pointer ml-1"
-                aria-label={`Delete ${topic.name}`}
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          );
-        })}
-      </div>
+                {/* Delete 'X' Button on Hover */}
+                <button
+                  type="button"
+                  id={`delete-topic-${topic.id}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteTopic(topic.id);
+                  }}
+                  title={`Remove topic "${topic.name}"`}
+                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/20 transition-all cursor-pointer ml-1"
+                  aria-label={`Delete ${topic.name}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
     </section>
   );

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Sparkles, BrainCircuit, ShieldCheck, ArrowRight, Layers, LogIn, X } from 'lucide-react';
 import { Orb3D } from './Orb3D';
 
@@ -17,11 +17,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   isAuthenticating,
   error
 }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-lg glass-panel-glow rounded-3xl p-6 sm:p-8 border border-cyan-400/50 shadow-[0_0_60px_rgba(0,243,255,0.3)] text-center overflow-hidden">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in"
+      onClick={onClose}
+    >
+      <div 
+        className="relative w-full max-w-lg glass-panel-glow rounded-3xl p-6 sm:p-8 border border-cyan-400/50 shadow-[0_0_60px_rgba(0,243,255,0.3)] text-center overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Background glow flares */}
         <div className="absolute -top-20 -left-20 w-48 h-48 rounded-full bg-cyan-500/20 filter blur-3xl pointer-events-none" />
@@ -81,7 +96,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             id="google-signin-btn"
             onClick={onGoogleSignIn}
             disabled={isAuthenticating}
-            className="w-full flex items-center justify-center gap-3 py-3 px-5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs sm:text-sm transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-[1.01] cursor-pointer disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-3 py-3 px-5 rounded-2xl bg-[#131826] hover:bg-[#1E293B] border border-cyan-400/40 text-white font-bold text-xs sm:text-sm transition-all shadow-[0_0_20px_rgba(0,240,255,0.2)] hover:scale-[1.01] cursor-pointer disabled:opacity-50"
           >
             {/* Google G SVG */}
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">

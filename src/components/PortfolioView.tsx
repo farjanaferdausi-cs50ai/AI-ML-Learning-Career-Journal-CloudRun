@@ -13,81 +13,111 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
+import { DashboardCardsSkeleton } from './common/LoadingState';
+import { EmptyState } from './common/EmptyState';
+
+import type { ProjectItem } from '../types';
 
 interface PortfolioViewProps {
+  projects?: ProjectItem[];
   onDiscussProjectPrompt: (prompt: string) => void;
+  onUpdateProjectStatus?: (projectId: string, status: string, color?: string) => void;
+  isLoading?: boolean;
 }
 
+const DEFAULT_PROJECTS: ProjectItem[] = [
+  {
+    id: 'ai-ml-journal',
+    userId: 'default',
+    title: 'AI/ML Career Transition & Technical Journal',
+    role: 'Full-Stack AI Engineering',
+    status: 'Live & Active',
+    statusColor: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
+    description: 'End-to-end full-stack career transition journal integrating Google Gemini API with fallback ladders, Firebase Authentication, Cloud Firestore real-time state persistence, and responsive glassmorphism UI.',
+    stack: ['TypeScript', 'React 18', 'Tailwind CSS', 'Node.js/Express', 'Gemini API', 'Firestore', 'Cloud Run'],
+    achievements: [
+      'Multi-model fallback ladder across Gemini 3.6 Flash and Gemini 3.1 Flash Lite with exponential backoff',
+      'Owner-bound Firestore document isolation and real-time reflection persistence',
+      'High-density dashboard with SVG circuit illustrations and interactive prompt matrix'
+    ],
+    prompt: 'Can you help me formulate bullet points for my AI/ML Career Transition Journal project on my resume and GitHub README?',
+    updatedAt: Date.now()
+  },
+  {
+    id: 'rag-talent-intelligence',
+    userId: 'default',
+    title: 'Talent & HR Algorithmic Intelligence Engine',
+    role: 'RAG & Hybrid Search',
+    status: 'In Development',
+    statusColor: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10',
+    description: 'Bridging 14+ years of HR talent management into computational vector retrieval. Converts job architecture, competency matrices, and employee retention factors into dense embeddings for semantic skill matching.',
+    stack: ['PyTorch', 'Hugging Face', 'Qdrant / ChromaDB', 'LangChain', 'FastAPI', 'Docker'],
+    achievements: [
+      'Custom domain chunking preserving hierarchical organizational job families',
+      'Hybrid BM25 + dense cosine similarity retrieval pipeline for multi-competency scoring',
+      'HR policy compliance safeguards preventing gender and demographic bias'
+    ],
+    prompt: 'Help me architect the retrieval pipeline for the Talent Intelligence Engine using hybrid dense-sparse vector search.',
+    updatedAt: Date.now()
+  },
+  {
+    id: 'pytorch-attention-from-scratch',
+    userId: 'default',
+    title: 'PyTorch Multi-Head Attention & Transformer From Scratch',
+    role: 'Core Deep Learning',
+    status: 'Completed',
+    statusColor: 'text-purple-400 border-purple-500/30 bg-purple-500/10',
+    description: 'Clean from-scratch implementation of the Transformer architecture following Vaswani et al. Scaled dot-product attention, multi-head projection layers, layer normalization, and autoregressive causal masking.',
+    stack: ['Python', 'PyTorch', 'NumPy', 'Matplotlib', 'Weights & Biases'],
+    achievements: [
+      'Explicit tensor dimensional transformations [B, T, C] -> [B, NH, T, HS]',
+      'Rotary Positional Embeddings (RoPE) and causal triangular attention masking',
+      'Trained character-level Shakespeare language model achieving low cross-entropy validation loss'
+    ],
+    prompt: 'Explain how to write a unit test suite verifying that causal masking in my PyTorch Multi-Head Attention block never leaks future tokens.',
+    updatedAt: Date.now()
+  },
+  {
+    id: 'gcp-vertex-deployer',
+    userId: 'default',
+    title: 'GCP Vertex AI & Cloud Run Serverless Inference Pipeline',
+    role: 'MLOps & Cloud',
+    status: 'Completed',
+    statusColor: 'text-blue-400 border-blue-500/30 bg-blue-500/10',
+    description: 'Automated CI/CD deployment blueprint packaging containerized Gen AI microservices to Google Cloud Run with Secret Manager and IAM least-privilege service accounts.',
+    stack: ['Google Cloud Run', 'Vertex AI', 'Docker', 'Secret Manager', 'Google Cloud IAM', 'GitHub Actions'],
+    achievements: [
+      'Sub-second container cold-starts using optimized alpine base images',
+      'Zero hardcoded API secrets with dynamic Secret Manager mounting',
+      'Automated health checks, structured logging, and concurrency scaling up to 80 req/instance'
+    ],
+    prompt: 'What are the top MLOps interview questions regarding Cloud Run deployment, latency optimization, and Secret Manager access?',
+    updatedAt: Date.now()
+  }
+];
+
 export const PortfolioView: React.FC<PortfolioViewProps> = ({
-  onDiscussProjectPrompt
+  projects: propProjects,
+  onDiscussProjectPrompt,
+  onUpdateProjectStatus,
+  isLoading = false
 }) => {
+  const projects = (propProjects && propProjects.length > 0) ? propProjects : DEFAULT_PROJECTS;
   const [expandedSpecs, setExpandedSpecs] = useState<Record<string, boolean>>({});
 
   const toggleSpecs = (id: string) => {
     setExpandedSpecs(prev => ({ ...prev, [id]: !prev[id] }));
   };
-  const projects = [
-    {
-      id: 'ai-ml-journal',
-      title: 'AI/ML Career Transition & Technical Journal',
-      role: 'Full-Stack AI Engineering',
-      status: 'Live & Active',
-      statusColor: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
-      description: 'End-to-end full-stack career transition journal integrating Google Gemini API with fallback ladders, Firebase Authentication, Cloud Firestore real-time state persistence, and responsive glassmorphism UI.',
-      stack: ['TypeScript', 'React 18', 'Tailwind CSS', 'Node.js/Express', 'Gemini API', 'Firestore', 'Cloud Run'],
-      achievements: [
-        'Multi-model fallback ladder across Gemini 3.6 Flash and Gemini 3.1 Flash Lite with exponential backoff',
-        'Owner-bound Firestore document isolation and real-time reflection persistence',
-        'High-density dashboard with SVG circuit illustrations and interactive prompt matrix'
-      ],
-      prompt: 'Can you help me formulate bullet points for my AI/ML Career Transition Journal project on my resume and GitHub README?'
-    },
-    {
-      id: 'rag-talent-intelligence',
-      title: 'Talent & HR Algorithmic Intelligence Engine',
-      role: 'RAG & Hybrid Search',
-      status: 'In Development',
-      statusColor: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10',
-      description: 'Bridging 14+ years of HR talent management into computational vector retrieval. Converts job architecture, competency matrices, and employee retention factors into dense embeddings for semantic skill matching.',
-      stack: ['PyTorch', 'Hugging Face', 'Qdrant / ChromaDB', 'LangChain', 'FastAPI', 'Docker'],
-      achievements: [
-        'Custom domain chunking preserving hierarchical organizational job families',
-        'Hybrid BM25 + dense cosine similarity retrieval pipeline for multi-competency scoring',
-        'HR policy compliance safeguards preventing gender and demographic bias'
-      ],
-      prompt: 'Help me architect the retrieval pipeline for the Talent Intelligence Engine using hybrid dense-sparse vector search.'
-    },
-    {
-      id: 'pytorch-attention-from-scratch',
-      title: 'PyTorch Multi-Head Attention & Transformer From Scratch',
-      role: 'Core Deep Learning',
-      status: 'Completed',
-      statusColor: 'text-purple-400 border-purple-500/30 bg-purple-500/10',
-      description: 'Clean from-scratch implementation of the Transformer architecture following Vaswani et al. Scaled dot-product attention, multi-head projection layers, layer normalization, and autoregressive causal masking.',
-      stack: ['Python', 'PyTorch', 'NumPy', 'Matplotlib', 'Weights & Biases'],
-      achievements: [
-        'Explicit tensor dimensional transformations [B, T, C] -> [B, NH, T, HS]',
-        'Rotary Positional Embeddings (RoPE) and causal triangular attention masking',
-        'Trained character-level Shakespeare language model achieving low cross-entropy validation loss'
-      ],
-      prompt: 'Explain how to write a unit test suite verifying that causal masking in my PyTorch Multi-Head Attention block never leaks future tokens.'
-    },
-    {
-      id: 'gcp-vertex-deployer',
-      title: 'GCP Vertex AI & Cloud Run Serverless Inference Pipeline',
-      role: 'MLOps & Cloud',
-      status: 'Completed',
-      statusColor: 'text-blue-400 border-blue-500/30 bg-blue-500/10',
-      description: 'Automated CI/CD deployment blueprint packaging containerized Gen AI microservices to Google Cloud Run with Secret Manager and IAM least-privilege service accounts.',
-      stack: ['Google Cloud Run', 'Vertex AI', 'Docker', 'Secret Manager', 'Google Cloud IAM', 'GitHub Actions'],
-      achievements: [
-        'Sub-second container cold-starts using optimized alpine base images',
-        'Zero hardcoded API secrets with dynamic Secret Manager mounting',
-        'Automated health checks, structured logging, and concurrency scaling up to 80 req/instance'
-      ],
-      prompt: 'What are the top MLOps interview questions regarding Cloud Run deployment, latency optimization, and Secret Manager access?'
-    }
-  ];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="p-6 rounded-2xl bg-[#081026] border border-[#142347]">
+          <DashboardCardsSkeleton count={3} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   X, 
   Sparkles, 
@@ -11,10 +11,14 @@ import {
   Check, 
   BookmarkCheck,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  MapPin,
+  Edit2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import type { SessionSummary } from '../types';
+import type { SessionSummary, JournalLocation } from '../types';
+import { LocationPickerModal } from './LocationPickerModal';
+import { LocationBadge } from './LocationBadge';
 
 interface SessionSummaryModalProps {
   summary: SessionSummary;
@@ -23,6 +27,8 @@ interface SessionSummaryModalProps {
   onClose: () => void;
   onConfirmSave?: () => void;
   isSaving?: boolean;
+  initialLocation?: JournalLocation | null;
+  onUpdateLocation?: (location: JournalLocation | null) => void;
 }
 
 export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
@@ -31,9 +37,17 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
   isOpen,
   onClose,
   onConfirmSave,
-  isSaving = false
+  isSaving = false,
+  initialLocation,
+  onUpdateLocation
 }) => {
-  const [copied, setCopied] = React.useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<JournalLocation | null>(initialLocation || null);
+
+  useEffect(() => {
+    setCurrentLocation(initialLocation || null);
+  }, [initialLocation, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -53,10 +67,18 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleLocationSelected = (loc: JournalLocation | null) => {
+    setCurrentLocation(loc);
+    if (onUpdateLocation) {
+      onUpdateLocation(loc);
+    }
+  };
+
   const handleCopyMarkdown = () => {
+    const locationStr = currentLocation ? `\n**Study Location:** ${currentLocation.placeName} (${currentLocation.lat.toFixed(4)}, ${currentLocation.lng.toFixed(4)})` : '';
     const md = `# AI/ML Learning & Career Journal - Session Summary
 **Date:** ${new Date().toLocaleDateString()}
-**Active Topics:** ${topics.join(', ') || 'AI/ML Engineering'}
+**Active Topics:** ${topics.join(', ') || 'AI/ML Engineering'}${locationStr}
 
 ## 🎯 Key Takeaway
 ${summary.keyTakeaway}
@@ -197,6 +219,52 @@ ${summary.actionableGoalTomorrow}
             </div>
           </div>
 
+          {/* Study Location Tagging (Optional) */}
+          <div className="p-3.5 rounded-xl bg-[#09132e]/90 border border-cyan-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-cyan-500/10 text-[#00F0FF]">
+                <MapPin className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-xs font-mono font-bold text-white block">
+                  Study Session Location
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {currentLocation 
+                    ? `Tagged: ${currentLocation.placeName}` 
+                    : 'Optional: Pin where you studied (library, lab, home, cafe)'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {currentLocation ? (
+                <>
+                  <LocationBadge location={currentLocation} />
+                  <button
+                    type="button"
+                    onClick={() => setIsLocationModalOpen(prev => !prev)}
+                    aria-expanded={isLocationModalOpen}
+                    className="px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-400/40 text-cyan-300 text-xs font-mono flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                    <span>Change</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsLocationModalOpen(prev => !prev)}
+                  aria-expanded={isLocationModalOpen}
+                  className="px-3 py-1.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/30 text-cyan-300 hover:text-white text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-[#00F0FF]" />
+                  <span>+ Add Location</span>
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Actionable Goal for Tomorrow */}
           <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/40">
             <div className="flex items-center gap-2 text-emerald-300 font-bold mb-1.5 text-xs font-mono uppercase tracking-wider">
@@ -230,6 +298,14 @@ ${summary.actionableGoalTomorrow}
         </div>
 
       </div>
+
+      {/* Location Picker Modal */}
+      <LocationPickerModal
+        isOpen={isLocationModalOpen}
+        initialLocation={currentLocation}
+        onClose={() => setIsLocationModalOpen(false)}
+        onSelectLocation={handleLocationSelected}
+      />
     </div>
   );
 };

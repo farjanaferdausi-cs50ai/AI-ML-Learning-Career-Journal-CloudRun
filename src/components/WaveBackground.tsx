@@ -5,7 +5,7 @@ import React from 'react';
  * Recreates the smooth flowing indigo/blue 3D fluid wave gradient from the reference image.
  * Color range: Deep indigo/blue (#1e24c9, #2b2ff0) to vibrant periwinkle/cobalt (#5b62fa, #7a82fb).
  */
-export const WaveBackground: React.FC<{ className?: string }> = ({ className = '' }) => {
+const WaveBackgroundComponent: React.FC<{ className?: string }> = ({ className = '' }) => {
   return (
     <div 
       className={`absolute inset-0 pointer-events-none z-0 overflow-hidden select-none rounded-3xl ${className}`}
@@ -169,3 +169,5 @@ export const WaveBackground: React.FC<{ className?: string }> = ({ className = '
     </div>
   );
 };
+
+export const WaveBackground = React.memo(WaveBackgroundComponent);

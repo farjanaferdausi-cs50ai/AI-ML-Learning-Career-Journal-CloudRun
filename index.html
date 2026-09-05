@@ -1,9 +1,87 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en" class="dark h-full w-full">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI/ML Learning & Career Journal</title>
+    <script>
+      // Intercept benign Vite WebSocket/HMR disconnects at the earliest capture point
+      (function () {
+        function isBenignWsError(err) {
+          if (!err) return false;
+          var str = '';
+          try {
+            str = typeof err === 'string' ? err : (err.message || err.stack || err.reason || String(err));
+          } catch (e) {}
+          str = (str || '').toLowerCase();
+          return (
+            str.indexOf('websocket') !== -1 ||
+            str.indexOf('failed to connect to websocket') !== -1 ||
+            str.indexOf('closed without opened') !== -1
+          );
+        }
+
+        window.addEventListener(
+          'unhandledrejection',
+          function (event) {
+            if (isBenignWsError(event.reason)) {
+              event.preventDefault();
+              if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+              if (event.stopPropagation) event.stopPropagation();
+              return true;
+            }
+          },
+          true
+        );
+
+        window.addEventListener(
+          'error',
+          function (event) {
+            if (isBenignWsError(event.error) || isBenignWsError(event.message)) {
+              event.preventDefault();
+              if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+              if (event.stopPropagation) event.stopPropagation();
+              return true;
+            }
+          },
+          true
+        );
+
+        // Defensive WebSocket wrapper for Vite client in sandbox environments
+        if (typeof window !== 'undefined' && window.WebSocket) {
+          var NativeWebSocket = window.WebSocket;
+          window.WebSocket = function (url, protocols) {
+            var ws;
+            try {
+              ws = protocols ? new NativeWebSocket(url, protocols) : new NativeWebSocket(url);
+            } catch (err) {
+              return {
+                readyState: 3,
+                close: function () {},
+                send: function () {},
+                addEventListener: function () {},
+                removeEventListener: function () {},
+                onopen: null,
+                onclose: null,
+                onerror: null,
+                onmessage: null
+              };
+            }
+
+            ws.addEventListener('error', function (e) {
+              if (e && e.preventDefault) e.preventDefault();
+              if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
+            });
+            return ws;
+          };
+          window.WebSocket.prototype = NativeWebSocket.prototype;
+          window.WebSocket.CONNECTING = NativeWebSocket.CONNECTING;
+          window.WebSocket.OPEN = NativeWebSocket.OPEN;
+          window.WebSocket.CLOSING = NativeWebSocket.CLOSING;
+          window.WebSocket.CLOSED = NativeWebSocket.CLOSED;
+        }
+      })();
+    </script>
     <meta name="description" content="Futuristic AI journaling and career transition command center for tracking the journey from 14+ years in HR to AI/ML engineering, powered by Gemini and Firebase." />
     <meta property="og:title" content="AI/ML Learning & Career Journal" />
     <meta property="og:description" content="Futuristic AI journaling and career transition command center for tracking the journey from 14+ years in HR to AI/ML engineering, powered by Gemini and Firebase." />
@@ -12,8 +90,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   </head>
-  <body class="bg-[#070b16] text-slate-100 min-h-screen selection:bg-purple-500/40 selection:text-cyan-200 antialiased overflow-x-hidden">
-    <div id="root"></div>
+  <body class="bg-[#030914] text-slate-100 h-full w-full m-0 p-0 selection:bg-purple-500/40 selection:text-cyan-200 antialiased overflow-hidden">
+    <div id="root" class="h-full w-full flex flex-col overflow-hidden">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%;background-color:#030914;color:#F1F5F9;font-family:system-ui,-apple-system,sans-serif;">
+        <div style="position:relative;width:56px;height:56px;display:flex;align-items:center;justify-content:center;">
+          <div style="position:absolute;inset:0;border-radius:50%;border:2px solid rgba(0,240,255,0.15);border-top-color:#00F0FF;animation:initial-spin 0.9s linear infinite;"></div>
+          <div style="width:20px;height:20px;border-radius:50%;background:radial-gradient(circle,#00F0FF,transparent);opacity:0.85;"></div>
+        </div>
+        <div style="margin-top:16px;font-size:11px;font-family:monospace;letter-spacing:0.12em;color:#94A3B8;">
+          LOADING AI/ML JOURNAL...
+        </div>
+        <style>
+          @keyframes initial-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

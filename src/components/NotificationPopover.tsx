@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Bell, 
+  Bell,
+  Mail,
   Sparkles, 
   Award, 
   BookOpen, 
@@ -102,10 +103,11 @@ export const NotificationPopover: React.FC<NotificationPopoverProps> = ({
     if (!isOpen) return;
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        // Also ensure not clicking the bell trigger button itself
+      const target = e.target as Node;
+      if (popoverRef.current && !popoverRef.current.contains(target)) {
+        // Also ensure not clicking the trigger button itself
         const bellBtn = document.getElementById('notifications-btn');
-        if (bellBtn && bellBtn.contains(e.target as Node)) return;
+        if (bellBtn && bellBtn.contains(target)) return;
         onClose();
       }
     };
@@ -213,18 +215,18 @@ export const NotificationPopover: React.FC<NotificationPopoverProps> = ({
       <div className="p-4 border-b border-[#142347] flex items-center justify-between bg-gradient-to-r from-[#0a132c] to-[#080f24]">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-[#00F0FF]/10 border border-[#00F0FF]/25 text-[#00F0FF]">
-            <Bell className="w-4 h-4" />
+            <Mail className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-white tracking-tight">Notifications</h2>
+              <h2 className="text-sm font-bold text-white tracking-tight">Email &amp; Notifications</h2>
               {unreadCount > 0 && (
                 <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-pink-500/20 border border-pink-500/40 text-pink-300">
                   {unreadCount} new
                 </span>
               )}
             </div>
-            <p className="text-[10px] text-slate-400">AI/ML transition milestones &amp; updates</p>
+            <p className="text-[10px] text-slate-400">AI/ML transition milestones, alerts &amp; messages</p>
           </div>
         </div>
 

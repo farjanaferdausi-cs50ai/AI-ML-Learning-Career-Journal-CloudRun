@@ -5,7 +5,7 @@ import React from 'react';
  * Creates a vivid, highly saturated, glossy deep purple liquid-marble swirl texture
  * with electric violet/magenta streams and glossy reflective highlights matching the reference image.
  */
-export const AppMarbleBackground: React.FC = () => {
+const AppMarbleBackgroundComponent: React.FC = () => {
   return (
     <div 
       className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none"
@@ -321,4 +321,6 @@ export const AppMarbleBackground: React.FC = () => {
     </div>
   );
 };
+
+export const AppMarbleBackground = React.memo(AppMarbleBackgroundComponent);
 

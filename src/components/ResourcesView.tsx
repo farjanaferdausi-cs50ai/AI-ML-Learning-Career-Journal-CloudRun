@@ -47,12 +47,12 @@ export const ResourcesView: React.FC = () => {
       iconColor: 'text-purple-400',
       items: [
         {
-          name: 'Ostad AI/ML Masterclass Portal',
-          authors: 'Ostad Bangladesh',
-          description: 'Live interactive mentor sessions, code assignments, and weekly milestone submissions.',
-          type: 'Curriculum',
-          tag: 'Structured',
-          url: 'https://ostad.app/'
+          name: 'Google Cloud Gen AI Academy & Vertex AI',
+          authors: 'Google Cloud Skills Boost',
+          description: 'Hands-on labs on Vertex AI, Gemini API integration, and serverless Cloud Run container deployment.',
+          type: 'Cloud Lab',
+          tag: 'Cloud & AI',
+          url: 'https://www.cloudskillsboost.google/'
         },
         {
           name: 'CodeBasics Python & ML Mastery',
@@ -63,12 +63,20 @@ export const ResourcesView: React.FC = () => {
           url: 'https://codebasics.io/'
         },
         {
-          name: 'Google Cloud Gen AI Academy & Vertex AI',
-          authors: 'Google Cloud Skills Boost',
-          description: 'Hands-on Qwiklabs on Vertex AI, Gemini API integration, and serverless Cloud Run container deployment.',
-          type: 'Cloud Lab',
-          tag: 'Cloud & AI',
-          url: 'https://www.cloudskillsboost.google/'
+          name: 'CodeAlpha AI/ML Internship & Projects',
+          authors: 'CodeAlpha Technologies',
+          description: 'Applied machine learning tasks, natural language processing prototypes, and real-world project portfolios.',
+          type: 'Projects',
+          tag: 'Applied ML',
+          url: 'https://codealpha.tech/'
+        },
+        {
+          name: 'Ostad AI/ML Masterclass Portal',
+          authors: 'Ostad Bangladesh',
+          description: 'Live interactive mentor sessions, code assignments, and weekly milestone submissions.',
+          type: 'Curriculum',
+          tag: 'Structured',
+          url: 'https://ostad.app/'
         }
       ]
     },

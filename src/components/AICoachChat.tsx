@@ -14,11 +14,15 @@ import {
   FolderGit2,
   Compass,
   ArrowRight,
-  Star
+  Star,
+  MessageSquare,
+  X
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { CircuitBrainIllustration } from './CircuitBrainIllustration';
+import { DynamicAIBrain } from './DynamicAIBrain';
 import { playSendSound } from '../utils/sound';
+import { AICoachLoading } from './common/LoadingState';
+import { ErrorState } from './common/ErrorState';
 import type { ChatMessage, Topic, GenerationConfig } from '../types';
 
 export interface AICoachChatProps {
@@ -108,6 +112,18 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Close Config Drawer on Escape
+  useEffect(() => {
+    if (!showConfigDrawer) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowConfigDrawer(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showConfigDrawer]);
+
   // Auto-scroll when messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -146,17 +162,17 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
   return (
     <div 
       id="ai-coach-section" 
-      className="w-full rounded-2xl bg-[#0c1228] border border-[#1a264a] overflow-hidden flex flex-col shadow-2xl relative"
+      className="w-full h-full min-h-full rounded-2xl bg-[#131826] border border-[#1E293B] overflow-hidden flex flex-col shadow-2xl relative"
     >
       
       {/* 1. Header Row */}
-      <div className="p-4 sm:p-5 bg-[#090e20] border-b border-[#162244] flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none">
+      <div className="p-4 sm:p-5 bg-[#0E1424] border-b border-[#1E293B] flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none">
         
         {/* Left: Bot Identity */}
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-0.5 flex items-center justify-center shadow-[0_0_12px_rgba(79,142,247,0.35)]">
-            <div className="w-full h-full bg-[#080d20] rounded-[10px] flex items-center justify-center">
-              <BrainCircuit className="w-5 h-5 text-cyan-300" />
+            <div className="w-full h-full bg-[#131826] rounded-[10px] flex items-center justify-center">
+              <BrainCircuit className="w-5 h-5 text-[#00F0FF]" />
             </div>
           </div>
 
@@ -170,10 +186,10 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
               </span>
             </div>
             
-            <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
+            <p className="text-[10px] text-[#94A3B8] font-medium flex items-center gap-1.5 mt-0.5">
               <span>Personalized AI Guidance for</span>
-              <span className="text-cyan-300 font-semibold flex items-center gap-0.5">
-                <Star className="w-2.5 h-2.5 fill-cyan-400 text-cyan-400" /> Farjana
+              <span className="text-[#00F0FF] font-semibold flex items-center gap-0.5">
+                <Star className="w-2.5 h-2.5 fill-[#00F0FF] text-[#00F0FF]" /> Farjana
               </span>
               <span>•</span>
               <span className="text-amber-400 font-semibold flex items-center gap-0.5">
@@ -188,14 +204,15 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
           {/* Config Hyperparameters Button */}
           <button
             id="toggle-hyperparams-btn"
-            onClick={() => setShowConfigDrawer(!showConfigDrawer)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
+            onClick={() => setShowConfigDrawer(prev => !prev)}
+            aria-expanded={showConfigDrawer}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all duration-200 ease-out active:scale-95 focus-visible:ring-2 focus-visible:ring-[#00F0FF] focus-visible:outline-none cursor-pointer ${
               showConfigDrawer 
-                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400' 
-                : 'bg-[#0e1633] text-slate-300 hover:text-white border-[#22356b] hover:bg-[#14204a]'
+                ? 'bg-[#00F0FF]/20 text-[#00F0FF] border-[#00F0FF]' 
+                : 'bg-[#1A1F2E] text-[#CBD5E1] hover:text-white border-[#1E293B] hover:bg-[#252D3F] hover:border-cyan-500/40'
             }`}
           >
-            <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+            <Sliders className="w-3.5 h-3.5 text-[#00F0FF]" />
             <span>Config</span>
           </button>
 
@@ -206,16 +223,16 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
                 onClick={onResetConversation}
                 disabled={isGenerating || isSummarizing}
                 title="Reset Dialogue"
-                className="p-1.5 rounded-lg bg-[#0e1633] text-slate-400 hover:text-white border border-[#22356b] transition-all cursor-pointer disabled:opacity-40"
+                className="p-1.5 rounded-lg bg-[#1A1F2E] text-[#94A3B8] hover:text-white border border-[#1E293B] hover:border-slate-500 transition-all duration-200 ease-out active:scale-95 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none cursor-pointer disabled:opacity-40"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-4 h-4 transition-transform duration-200 hover:-rotate-45" />
               </button>
 
               <button
                 id="complete-session-btn"
                 onClick={onCompleteSession}
                 disabled={isGenerating || isSummarizing || conversation.length < 2}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs font-mono shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all cursor-pointer disabled:opacity-40"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs font-mono shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all duration-200 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-95 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none cursor-pointer disabled:opacity-40"
               >
                 {isSummarizing ? (
                   <>
@@ -237,20 +254,30 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
 
       {/* 2. Hyperparameters Drawer */}
       {showConfigDrawer && (
-        <div className="px-5 py-3 bg-[#080e22] border-b border-[#1a2954] text-xs font-mono animate-in fade-in duration-150">
+        <div className="px-5 py-3 bg-[#0E1424] border-b border-[#1E293B] text-xs font-mono animate-in fade-in duration-150">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-cyan-300 font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+            <span className="text-[#00F0FF] font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
               <BrainCircuit className="w-3.5 h-3.5" />
               <span>Gemini 3.7 Flash Reasoning Configuration</span>
             </span>
-            <span className="text-[10px] text-slate-400">gemini-3.7-flash • thinking_level: &quot;medium&quot;</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[#94A3B8]">gemini-3.7-flash • thinking_level: &quot;medium&quot;</span>
+              <button
+                type="button"
+                onClick={() => setShowConfigDrawer(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                aria-label="Close configuration drawer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
             <div className="space-y-1">
               <div className="flex justify-between text-[10px]">
-                <span className="text-slate-300">thinking_level</span>
-                <span className="text-cyan-400 font-bold">{tempConfig.thinkingLevel || 'medium'}</span>
+                <span className="text-[#CBD5E1]">thinking_level</span>
+                <span className="text-[#00F0FF] font-bold">{tempConfig.thinkingLevel || 'medium'}</span>
               </div>
               <select
                 value={tempConfig.thinkingLevel || 'medium'}
@@ -260,7 +287,7 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
                   setTempConfig(next);
                   onUpdateConfig?.(next);
                 }}
-                className="w-full px-2 py-1 rounded bg-[#0b122c] border border-[#22356b] text-cyan-200 text-xs focus:outline-none"
+                className="w-full px-2 py-1 rounded bg-[#131826] border border-[#1E293B] text-cyan-200 text-xs focus:outline-none"
               >
                 <option value="minimal">minimal</option>
                 <option value="low">low</option>
@@ -271,8 +298,8 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
 
             <div className="space-y-1">
               <div className="flex justify-between text-[10px]">
-                <span className="text-slate-300">temperature</span>
-                <span className="text-cyan-400 font-bold">{tempConfig.temperature}</span>
+                <span className="text-[#CBD5E1]">temperature</span>
+                <span className="text-[#00F0FF] font-bold">{tempConfig.temperature}</span>
               </div>
               <input
                 type="range"
@@ -286,14 +313,14 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
                   setTempConfig(next);
                   onUpdateConfig?.(next);
                 }}
-                className="w-full h-1.5 bg-[#162244] rounded appearance-none cursor-pointer accent-cyan-400 mt-2"
+                className="w-full h-1.5 bg-[#1E293B] rounded appearance-none cursor-pointer accent-cyan-400 mt-2"
               />
             </div>
 
             <div className="space-y-1">
               <div className="flex justify-between text-[10px]">
-                <span className="text-slate-300">top_p</span>
-                <span className="text-cyan-400 font-bold">{tempConfig.topP}</span>
+                <span className="text-[#CBD5E1]">top_p</span>
+                <span className="text-[#00F0FF] font-bold">{tempConfig.topP}</span>
               </div>
               <input
                 type="range"
@@ -307,14 +334,14 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
                   setTempConfig(next);
                   onUpdateConfig?.(next);
                 }}
-                className="w-full h-1.5 bg-[#162244] rounded appearance-none cursor-pointer accent-cyan-400 mt-2"
+                className="w-full h-1.5 bg-[#1E293B] rounded appearance-none cursor-pointer accent-cyan-400 mt-2"
               />
             </div>
 
             <div className="space-y-1">
               <div className="flex justify-between text-[10px]">
-                <span className="text-slate-300">top_k</span>
-                <span className="text-cyan-400 font-bold">{tempConfig.topK}</span>
+                <span className="text-[#CBD5E1]">top_k</span>
+                <span className="text-[#00F0FF] font-bold">{tempConfig.topK}</span>
               </div>
               <input
                 type="number"
@@ -327,14 +354,14 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
                   setTempConfig(next);
                   onUpdateConfig?.(next);
                 }}
-                className="w-full px-2 py-1 rounded bg-[#0b122c] border border-[#22356b] text-cyan-200 text-xs focus:outline-none"
+                className="w-full px-2 py-1 rounded bg-[#131826] border border-[#1E293B] text-cyan-200 text-xs focus:outline-none"
               />
             </div>
 
             <div className="space-y-1">
               <div className="flex justify-between text-[10px]">
-                <span className="text-slate-300">candidate_count</span>
-                <span className="text-cyan-400 font-bold">{tempConfig.candidateCount}</span>
+                <span className="text-[#CBD5E1]">candidate_count</span>
+                <span className="text-[#00F0FF] font-bold">{tempConfig.candidateCount}</span>
               </div>
               <input
                 type="number"
@@ -347,7 +374,7 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
                   setTempConfig(next);
                   onUpdateConfig?.(next);
                 }}
-                className="w-full px-2 py-1 rounded bg-[#0b122c] border border-[#22356b] text-cyan-200 text-xs focus:outline-none"
+                className="w-full px-2 py-1 rounded bg-[#131826] border border-[#1E293B] text-cyan-200 text-xs focus:outline-none"
               />
             </div>
           </div>
@@ -356,15 +383,15 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
 
       {/* 3. Active Context Row */}
       {activeTopicNames.length > 0 && (
-        <div className="px-5 py-2 bg-[#090f24] border-b border-[#141e3d] flex items-center gap-2 overflow-x-auto select-none">
-          <span className="text-[10px] font-mono uppercase text-slate-400 tracking-wider shrink-0 font-bold">
+        <div className="px-5 py-2 bg-[#0E1424] border-b border-[#1E293B] flex items-center gap-2 overflow-x-auto select-none">
+          <span className="text-[10px] font-mono uppercase text-[#94A3B8] tracking-wider shrink-0 font-bold">
             ACTIVE CONTEXT:
           </span>
           <div className="flex items-center gap-2 flex-nowrap">
             {Array.from(new Set(activeTopicNames)).map((name, idx) => (
               <span 
                 key={`active-context-${name}-${idx}`} 
-                className="px-2.5 py-0.5 rounded-md text-[10px] font-mono bg-[#101738] border border-[#22356b] text-cyan-300 whitespace-nowrap"
+                className="px-2.5 py-0.5 rounded-md text-[10px] font-mono bg-[#1A1F2E] border border-[#1E293B] text-[#00F0FF] whitespace-nowrap"
               >
                 {name}
               </span>
@@ -376,87 +403,95 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
       {/* 4. Main Content Area */}
       <div className="p-5 flex-1 overflow-y-auto">
         
-        {/* If no conversation yet -> Show 2-Column Home Layout matching reference */}
+        {/* If no conversation yet -> Show Reference Image Layout with Dynamic Animated Brain */}
         {conversation.length === 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div className="space-y-4">
             
-            {/* Left Column: Heading + 2x2 Grid Suggestions */}
-            <div className="lg:col-span-8 space-y-4">
-              <div>
-                <h3 className="text-base sm:text-lg font-bold text-white tracking-wide">
-                  Ready for Today&apos;s AI/ML Study Session
-                </h3>
-                <p className="text-xs text-slate-300 leading-relaxed mt-1">
-                  Ask anything technical or academic in PyTorch, Transformers, mathematical modeling, conceptual reasoning, portfolio, games of AI engineering &amp; AI/ML engineering.
+            {/* Dynamic Animated Brain Centerpiece */}
+            <div className="flex flex-col items-center justify-center py-2 relative">
+              <DynamicAIBrain 
+                size="md" 
+                showEnergyWaves={true}
+                showOrbits={true}
+                showParticles={true}
+                statusText="AI/ML Coach Online"
+              />
+            </div>
+
+            {/* Coach Speech Bubble Greeting matching Reference Image */}
+            <div className="flex items-start gap-3 justify-start">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-700 border border-violet-400/50 flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_10px_rgba(139,92,246,0.3)]">
+                <Bot className="w-4 h-4 text-violet-100" />
+              </div>
+
+              <div className="max-w-[90%] rounded-2xl rounded-tl-xs p-4 bg-[#1A1F2E] border border-[#1E293B] text-[#F1F5F9] shadow-md">
+                <div className="flex items-center justify-between gap-4 mb-2 pb-1.5 border-b border-white/10 text-[10px] font-mono">
+                  <span className="text-purple-300 font-semibold flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-purple-400" />
+                    <span>Coach AI</span>
+                  </span>
+                  <span className="text-[#94A3B8] font-mono">09:30 AM</span>
+                </div>
+
+                <p className="text-xs sm:text-sm text-[#E2E8F0] leading-relaxed font-normal">
+                  Good morning, Farjana! 🚀 Ready for today&apos;s learning adventure?
                 </p>
               </div>
+            </div>
 
-              {/* 2x2 Grid of Suggestion Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {QUICK_ACTIONS.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        playSendSound();
-                        onSendMessage(item.prompt);
-                      }}
-                      className="p-3.5 rounded-xl bg-[#090f24] hover:bg-[#10193d] border border-[#18264e] hover:border-[#2b4185] text-left transition-all group cursor-pointer shadow-md hover:scale-[1.01]"
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <div 
-                          className="p-1 rounded-md"
-                          style={{ backgroundColor: `${item.color}20`, color: item.color }}
-                        >
-                          <Icon className="w-3.5 h-3.5" />
-                        </div>
-                        <h4 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors">
-                          {item.title}
-                        </h4>
+            {/* 4 Quick Prompt Suggestion Chips (2x2 Grid) matching Reference Image */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              {[
+                { label: 'Explain Transformers', prompt: 'Explain the Transformer architecture step-by-step with attention mechanisms and real-world analogies.' },
+                { label: 'Help with PyTorch', prompt: 'Help me understand and write PyTorch tensors, autograd, and custom neural network training loops.' },
+                { label: 'Suggest Next Topic', prompt: 'Based on my current active topics (Deep Learning, PyTorch, Transformers), what should I study next in my AI/ML roadmap?' },
+                { label: 'Review My Progress', prompt: 'Review my career transition progress from HR to AI/ML Engineering and highlight my key milestones.' }
+              ].map((item, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    playSendSound();
+                    onSendMessage(item.prompt);
+                  }}
+                  className="flex items-center gap-2 p-3 rounded-xl bg-[#1A1F2E] hover:bg-[#252D3F] border border-[#1E293B] hover:border-[#00F0FF]/50 text-left transition-all duration-200 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#00F0FF] focus-visible:outline-none text-xs text-[#CBD5E1] hover:text-[#00F0FF] cursor-pointer shadow-sm group"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-[#00F0FF] group-hover:scale-110 transition-transform duration-200 shrink-0" />
+                  <span className="font-medium truncate">{item.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Action Cards (HR-to-AI/ML Analogy, Check-in, Portfolio, Strategy) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-[#1E293B]">
+              {QUICK_ACTIONS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      playSendSound();
+                      onSendMessage(item.prompt);
+                    }}
+                    className="p-3 rounded-xl bg-[#1A1F2E] hover:bg-[#252D3F] border border-[#1E293B] hover:border-cyan-400/50 text-left transition-all duration-200 ease-out hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none group cursor-pointer shadow-sm"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <div 
+                        className="p-1 rounded-md transition-transform duration-200 group-hover:scale-110"
+                        style={{ backgroundColor: `${item.color}20`, color: item.color }}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
                       </div>
-                      <p className="text-[11px] text-slate-400 group-hover:text-slate-300 leading-relaxed">
-                        {item.desc}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
+                      <h4 className="text-xs font-bold text-white group-hover:text-[#00F0FF] transition-colors duration-150">
+                        {item.title}
+                      </h4>
+                    </div>
+                    <p className="text-[11px] text-[#94A3B8] group-hover:text-[#CBD5E1] leading-relaxed transition-colors duration-150">
+                      {item.desc}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
-
-            {/* Right Column: Mini Circuit Brain Illustration + 4 Action Buttons */}
-            <div className="lg:col-span-4 flex flex-col items-center justify-center p-3 rounded-2xl bg-[#060c1d] border border-[#132042] relative overflow-hidden shadow-inner">
-              <div className="flex items-center justify-center w-full">
-                <CircuitBrainIllustration size="sm" showKeywords={false} showPlatform={false} />
-                
-                {/* 4 Action Pills Vertically Stacked */}
-                <div className="flex flex-col gap-1.5 ml-1">
-                  {['Ask', 'Learn', 'Build', 'Grow'].map((act, i) => (
-                    <button
-                      key={act}
-                      onClick={() => {
-                        const prompts = [
-                          'What is the mathematical foundation of attention mechanisms?',
-                          'Teach me step-by-step how to write a custom PyTorch DataLoader.',
-                          'Help me architect a full-stack Gemini app with Cloud Run backend.',
-                          'How do I position my 14+ years of HR experience in an AI/ML resume?'
-                        ];
-                        playSendSound();
-                        onSendMessage(prompts[i]);
-                      }}
-                      className="px-2.5 py-1 rounded-md bg-[#0d1736] hover:bg-[#0072FF]/20 border border-[#1d2f5e] hover:border-[#00F0FF]/50 text-[10px] font-mono font-semibold text-[#00F0FF] hover:text-white transition-all cursor-pointer text-center"
-                    >
-                      {act}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-2.5 px-3 py-1 rounded bg-[#09122a] border border-[#162752] text-[9px] font-mono text-slate-400 text-center w-full">
-                Smarter Learning. Bigger Impact.
-              </div>
-            </div>
-
           </div>
         ) : (
           /* Active Conversation Stream */
@@ -477,16 +512,16 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
                   <div
                     className={`max-w-[85%] sm:max-w-[78%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed transition-all shadow-md ${
                       isUser
-                        ? 'bg-[#0c1c42] border border-cyan-500/50 text-cyan-50 rounded-tr-xs'
-                        : 'bg-[#090f24] border border-[#1c2a54] text-slate-100 rounded-tl-xs'
+                        ? 'bg-[#0C2A54] border border-[#00F0FF]/50 text-white rounded-tr-xs'
+                        : 'bg-[#1A1F2E] border border-[#1E293B] text-[#F1F5F9] rounded-tl-xs'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-4 mb-2 pb-1.5 border-b border-white/10 text-[10px] font-mono">
-                      <span className={isUser ? 'text-cyan-300 font-semibold' : 'text-purple-300 font-semibold flex items-center gap-1'}>
+                      <span className={isUser ? 'text-[#00F0FF] font-semibold' : 'text-purple-300 font-semibold flex items-center gap-1'}>
                         {!isUser && <Sparkles className="w-3 h-3 text-purple-400" />}
                         {isUser ? 'Farjana' : 'AI/ML Coach'}
                       </span>
-                      <span className="text-slate-400">
+                      <span className="text-[#94A3B8]">
                         {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                       </span>
                     </div>
@@ -510,40 +545,26 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
             })}
 
             {isGenerating && (
-              <div className="flex items-start gap-3 justify-start">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-700 border border-violet-400/50 flex items-center justify-center shrink-0 animate-pulse">
-                  <Bot className="w-4 h-4 text-violet-200" />
-                </div>
-                <div className="rounded-2xl rounded-tl-xs p-3.5 bg-[#090f24] border border-[#1c2a54] flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                  <span className="text-xs font-mono text-purple-300">
-                    AI/ML Coach is reasoning...
-                  </span>
-                </div>
-              </div>
+              <AICoachLoading message="AI/ML Coach is reasoning..." />
+            )}
+
+            {isSummarizing && (
+              <AICoachLoading message="Synthesizing session takeaways into your learning journal..." />
             )}
 
             {error && (
-              <div className="p-3 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 text-xs flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                  <span>{error}</span>
-                </div>
-                <button
-                  onClick={() => {
-                    if (conversation.length > 0 && conversation[conversation.length - 1].role === 'user') {
-                      onSendMessage(conversation[conversation.length - 1].content);
-                    }
-                  }}
-                  className="px-2.5 py-1 rounded bg-red-800 hover:bg-red-700 text-white text-xs font-mono font-semibold cursor-pointer"
-                >
-                  Retry
-                </button>
-              </div>
+              <ErrorState
+                type={error.toLowerCase().includes('network') ? 'network' : 'ai_gemini'}
+                inline
+                title="AI Coach Notice"
+                message={error}
+                retryLabel="Retry Message"
+                onRetry={() => {
+                  if (conversation.length > 0 && conversation[conversation.length - 1].role === 'user') {
+                    onSendMessage(conversation[conversation.length - 1].content);
+                  }
+                }}
+              />
             )}
 
             <div ref={messagesEndRef} />
@@ -553,10 +574,10 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
       </div>
 
       {/* 5. Chat Input Bar */}
-      <div className="p-4 bg-[#090e20] border-t border-[#162244]">
+      <div className="p-4 bg-[#0E1424] border-t border-[#1E293B]">
         <form onSubmit={handleSubmit} className="flex items-center gap-3">
           
-          <div className="flex-1 relative rounded-xl bg-[#060a17] border border-[#1a2954] focus-within:border-cyan-400 transition-all">
+          <div className="flex-1 relative rounded-xl bg-[#0B0F19] border border-[#1E293B] focus-within:border-[#00F0FF] transition-all">
             <textarea
               ref={textareaRef}
               id="coach-chat-input"
@@ -566,11 +587,11 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
               onKeyDown={handleKeyDown}
               disabled={isGenerating || isSummarizing}
               placeholder="Ask your AI/ML Coach anything..."
-              className="w-full px-4 py-3 bg-transparent text-white placeholder-slate-500 text-xs sm:text-sm resize-none focus:outline-none max-h-36 font-normal leading-relaxed"
+              className="w-full px-4 py-3 bg-transparent text-[#F1F5F9] placeholder-[#64748B] text-xs sm:text-sm resize-none focus:outline-none max-h-36 font-normal leading-relaxed"
             />
-            <div className="px-4 pb-1.5 flex items-center justify-between text-[10px] font-mono text-slate-500">
+            <div className="px-4 pb-1.5 flex items-center justify-between text-[10px] font-mono text-[#94A3B8]">
               <span>Press Enter to send • Shift+Enter for new line</span>
-              <span className="text-cyan-400/80 flex items-center gap-1">
+              <span className="text-[#00F0FF]/80 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 Gemini 3.6 Flash
               </span>
@@ -581,10 +602,10 @@ export const AICoachChat: React.FC<AICoachChatProps> = ({
             id="send-message-btn"
             type="submit"
             disabled={!inputText.trim() || isGenerating || isSummarizing}
-            className="w-11 h-11 rounded-full bg-gradient-to-r from-[#0072FF] to-[#00F0FF] hover:from-[#005cd6] hover:to-[#00d4e0] disabled:opacity-30 text-white flex items-center justify-center shadow-[0_0_16px_rgba(0,114,255,0.5)] transition-all cursor-pointer shrink-0"
+            className="w-11 h-11 rounded-full bg-gradient-to-r from-[#0072FF] to-[#00F0FF] hover:from-[#005cd6] hover:to-[#00d4e0] hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 text-white flex items-center justify-center shadow-[0_0_16px_rgba(0,114,255,0.5)] hover:shadow-[0_0_20px_rgba(0,240,255,0.7)] transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-[#00F0FF] focus-visible:outline-none cursor-pointer shrink-0"
             aria-label="Send message"
           >
-            <Send className="w-4 h-4 text-white drop-shadow-[0_0_4px_rgba(0,0,0,0.5)]" />
+            <Send className="w-4 h-4 text-white drop-shadow-[0_0_4px_rgba(0,0,0,0.5)] transition-transform duration-200 group-hover:translate-x-0.5" />
           </button>
 
         </form>

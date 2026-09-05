@@ -11,10 +11,13 @@ import {
   RefreshCw,
   LogOut,
   User as UserIcon,
-  CheckCircle2
+  CheckCircle2,
+  X
 } from 'lucide-react';
 import type { User } from 'firebase/auth';
 import type { GenerationConfig } from '../types';
+import type { ToastNotification } from './common/SuccessFeedback';
+import { NotificationSettingsCard } from './NotificationSettingsCard';
 
 interface SettingsViewProps {
   currentUser: User | null;
@@ -23,6 +26,8 @@ interface SettingsViewProps {
   onOpenAuthModal: () => void;
   onOpenSignOutModal: () => void;
   onClearLocalHistory: () => void;
+  onShowToast?: (toast: Omit<ToastNotification, 'id'>) => void;
+  onClose?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -31,7 +36,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onUpdateConfig,
   onOpenAuthModal,
   onOpenSignOutModal,
-  onClearLocalHistory
+  onClearLocalHistory,
+  onShowToast,
+  onClose
 }) => {
   return (
     <div className="space-y-6">
@@ -48,7 +55,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               Application Settings & AI Hyperparameters
             </h2>
             <p className="text-xs text-slate-300 max-w-2xl mt-1">
-              Customize model temperature, reasoning thinking depth, Firestore persistence modes, and authenticated profile settings.
+              Customize model temperature, reasoning thinking depth, Firestore persistence modes, and external notification alerts.
             </p>
           </div>
 
@@ -57,9 +64,28 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Security Rules Active</span>
             </span>
+
+            {onClose && (
+              <button
+                id="close-settings-view-btn"
+                onClick={onClose}
+                className="p-2 rounded-xl bg-[#091228] hover:bg-[#152347] border border-[#1a2d5c] hover:border-cyan-400/50 text-slate-400 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 text-xs font-mono"
+                aria-label="Close Settings and return to Dashboard"
+                title="Close Settings (Esc)"
+              >
+                <X className="w-4 h-4" />
+                <span className="hidden sm:inline">Close</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* External Notifications Card */}
+      <NotificationSettingsCard 
+        currentUser={currentUser}
+        onShowToast={onShowToast}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Model Hyperparameters Card */}

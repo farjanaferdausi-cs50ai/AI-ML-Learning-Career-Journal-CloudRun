@@ -119,7 +119,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search topics, math, models..."
-                className="pl-8 pr-3 py-1.5 rounded-xl bg-[#091124] border border-[#1b2b52] text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#00F0FF] transition-all w-52 sm:w-64"
+                className="pl-8 pr-3 py-1.5 rounded-xl bg-[#091124] border border-[#1b2b52] text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#00F0FF] focus:ring-1 focus:ring-[#00F0FF] transition-all duration-200 w-52 sm:w-64"
               />
             </div>
           </div>
@@ -131,17 +131,17 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
         {filteredDomains.map((domain, i) => (
           <div
             key={i}
-            className="p-5 rounded-2xl bg-[#070e20] border border-[#142347] hover:border-[#00F0FF]/50 transition-all flex flex-col justify-between group shadow-lg hover:shadow-[0_0_20px_rgba(0,240,255,0.15)]"
+            className="p-5 rounded-2xl bg-[#070e20] border border-[#142347] hover:border-[#00F0FF]/50 hover:-translate-y-0.5 transition-all duration-200 ease-out flex flex-col justify-between group shadow-lg hover:shadow-[0_0_20px_rgba(0,240,255,0.15)]"
           >
             <div>
               <div className="flex items-center justify-between gap-2 mb-2.5">
-                <span className={`px-2 py-0.5 rounded-md border text-[10px] font-mono font-semibold ${domain.badgeColor}`}>
+                <span className={`px-2 py-0.5 rounded-md border text-[10px] font-mono font-semibold transition-all duration-200 ${domain.badgeColor}`}>
                   {domain.badge}
                 </span>
                 <span className="text-[10px] font-mono text-slate-500">Domain {i + 1}</span>
               </div>
 
-              <h3 className="text-sm font-bold text-white group-hover:text-[#00F0FF] transition-colors flex items-center gap-1.5">
+              <h3 className="text-sm font-bold text-white group-hover:text-[#00F0FF] transition-colors duration-150 flex items-center gap-1.5">
                 {domain.title}
               </h3>
 
@@ -153,7 +153,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                 {domain.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="px-2 py-0.5 rounded bg-[#0b1633] border border-[#1a2d59] text-[10px] font-mono text-slate-300"
+                    className="px-2 py-0.5 rounded bg-[#0b1633] border border-[#1a2d59] hover:border-cyan-500/40 text-[10px] font-mono text-slate-300 hover:text-cyan-300 transition-colors duration-150 cursor-pointer"
                   >
                     #{tag}
                   </span>
@@ -164,17 +164,17 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
             <div className="pt-4 mt-4 border-t border-[#121f3d] flex items-center justify-between">
               <button
                 onClick={() => onAddTopic(domain.tags[0])}
-                className="text-[11px] font-mono text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                className="text-[11px] font-mono text-slate-400 hover:text-slate-200 transition-all duration-200 ease-out active:scale-95 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded px-1 cursor-pointer"
               >
                 + Track Topic
               </button>
 
               <button
                 onClick={() => onSelectTopicPrompt(domain.prompt)}
-                className="flex items-center gap-1 text-xs font-mono font-semibold text-[#00F0FF] hover:text-white transition-colors cursor-pointer"
+                className="flex items-center gap-1 text-xs font-mono font-semibold text-[#00F0FF] hover:text-white transition-all duration-200 ease-out hover:translate-x-0.5 active:scale-95 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded px-1.5 py-0.5 cursor-pointer group/btn"
               >
                 <span>Study with Coach</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover/btn:translate-x-0.5" />
               </button>
             </div>
           </div>

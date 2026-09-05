@@ -23,14 +23,14 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   return (
     <section 
       id="hero-banner"
-      className="w-full rounded-2xl bg-gradient-to-r from-[#060c1d] via-[#091228] to-[#0c1736] border border-[#142347] p-6 sm:p-7 relative overflow-hidden shadow-2xl"
+      className="w-full rounded-2xl bg-gradient-to-r from-[#131826] via-[#161D2F] to-[#1A2238] border border-[#1E293B] p-6 sm:p-7 relative overflow-hidden shadow-2xl"
     >
       {/* Background ambient lighting matching Image #2 */}
       <div className="absolute top-0 right-1/4 w-96 h-64 bg-[#00F0FF]/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-80 h-64 bg-[#6366f1]/12 rounded-full blur-3xl pointer-events-none" />
 
       {/* Top Right: AI Coach Online Pill matching Image #2 */}
-      <div className="absolute top-4 sm:top-5 right-4 sm:right-6 flex items-center gap-2 px-3 py-1 rounded-full bg-[#050f1f]/90 border border-cyan-400/40 text-[10px] font-mono font-bold tracking-wider text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.25)] backdrop-blur-md z-20">
+      <div className="absolute top-4 sm:top-5 right-4 sm:right-6 flex items-center gap-2 px-3 py-1 rounded-full bg-[#0E1424]/90 border border-cyan-400/40 text-[10px] font-mono font-bold tracking-wider text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.25)] backdrop-blur-md z-20">
         <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse shadow-[0_0_8px_#10b981]" />
         <span>AI COACH • ONLINE</span>
       </div>
@@ -62,7 +62,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           </div>
 
           {/* Description */}
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-lg">
+          <p className="text-xs sm:text-sm text-[#CBD5E1] leading-relaxed max-w-lg">
             Your intelligent companion for structured learning, real-world projects, and a successful AI/ML career.
           </p>
 
@@ -87,7 +87,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                   el?.scrollIntoView({ behavior: 'smooth' });
                 }
               }}
-              className="px-4 py-2.5 rounded-xl bg-[#080e22]/90 hover:bg-[#0f1a3b] border border-[#1d2d57] text-slate-200 hover:text-white font-medium text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-[#1A1F2E] hover:bg-[#252D3F] border border-[#1E293B] text-[#CBD5E1] hover:text-white font-medium text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer"
             >
               <Play className="w-3.5 h-3.5 text-cyan-300 fill-cyan-300" />
               <span>Watch Overview</span>

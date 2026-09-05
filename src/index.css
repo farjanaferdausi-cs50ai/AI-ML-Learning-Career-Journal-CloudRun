@@ -2,26 +2,173 @@
 
 @layer base {
   :root {
+    color-scheme: dark;
     --font-heading: 'Space Grotesk', 'Chakra Petch', sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
     --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
+  html, body, #root {
+    height: 100%;
+    min-height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    background-color: #0B0F19;
+    color: #F1F5F9;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
   body {
     font-family: var(--font-body);
-    background-color: #030914;
-    color: #e2e8f0;
-    overflow-x: hidden;
+    background-color: #0B0F19;
+    color: #F1F5F9;
+    overflow: hidden;
+  }
+
+  /* Form & Native Control High Contrast Dark Mode Enforcement */
+  input, textarea, select {
+    color: #F1F5F9;
+    color-scheme: dark;
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: #94A3B8 !important;
+    opacity: 1;
+  }
+
+  option {
+    background-color: #131826;
+    color: #F1F5F9;
+  }
+
+  /* Browser Autofill Protection against White Boxes & Dark Text */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover, 
+  input:-webkit-autofill:focus, 
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: #F1F5F9 !important;
+    -webkit-box-shadow: 0 0 0px 1000px #131826 inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+    caret-color: #00F0FF;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
     letter-spacing: -0.02em;
+    color: #FFFFFF;
   }
 
   code, pre, .font-mono {
     font-family: var(--font-mono);
   }
+}
+
+/* AI Coach Markdown Styling for High Contrast Dark Mode */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+  color: #FFFFFF !important;
+  font-weight: 700;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+.markdown-content h1 { font-size: 1.15rem; }
+.markdown-content h2 { font-size: 1.05rem; }
+.markdown-content h3 { font-size: 0.95rem; }
+
+.markdown-content p {
+  color: #CBD5E1 !important;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-content strong,
+.markdown-content b {
+  color: #FFFFFF !important;
+  font-weight: 700;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  color: #CBD5E1 !important;
+  padding-left: 1.25rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-content li {
+  color: #CBD5E1 !important;
+  margin-bottom: 0.25rem;
+}
+
+.markdown-content code {
+  color: #38BDF8 !important;
+  background-color: #0B0F19 !important;
+  border: 1px solid #1E293B !important;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.375rem;
+  font-size: 0.85em;
+  font-family: var(--font-mono);
+}
+
+.markdown-content pre {
+  background-color: #0B0F19 !important;
+  border: 1px solid #1E293B !important;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.markdown-content pre code {
+  background-color: transparent !important;
+  border: none !important;
+  padding: 0;
+}
+
+.markdown-content blockquote {
+  border-left: 3px solid #00F0FF;
+  background: rgba(26, 31, 46, 0.6);
+  padding: 0.5rem 0.75rem;
+  margin: 0.5rem 0;
+  border-radius: 0 0.375rem 0.375rem 0;
+  color: #E2E8F0 !important;
+}
+
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: 0.85rem;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid #1E293B;
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+}
+
+.markdown-content th {
+  background-color: #131826;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.markdown-content td {
+  background-color: #1A1F2E;
+  color: #CBD5E1;
 }
 
 /* Sci-Fi Background Matrix Grid with Cyan & Navy Hues */
@@ -142,6 +289,237 @@
   }
 }
 
+/* Seamless Continuous Orbit Rotations (Zero Jitter) */
+@keyframes spin-linear {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin-reverse-linear {
+  0% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+/* Soft Radiating Outward Energy Pulse Waves */
+@keyframes energy-wave-1 {
+  0% {
+    transform: scale(0.65);
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+@keyframes energy-wave-2 {
+  0% {
+    transform: scale(0.65);
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+/* Organic Brain Breathing Motion (Gentle, subtle rhythm) */
+@keyframes brain-breathe {
+  0%, 100% {
+    transform: scale(1) translateY(0px);
+  }
+  50% {
+    transform: scale(1.025) translateY(-2px);
+  }
+}
+
+/* Synaptic Node Blink & Sparkle */
+@keyframes synapse-blink {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.2);
+  }
+}
+
+/* Horizontal Light Rays and Flare Sweep */
+@keyframes light-ray-pulse {
+  0%, 100% {
+    opacity: 0.15;
+    transform: scaleX(0.85);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scaleX(1.15);
+  }
+}
+
+@keyframes light-ray-drift {
+  0% {
+    transform: translateX(-15px) scaleY(0.9);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateX(15px) scaleY(1.1);
+    opacity: 0.75;
+  }
+  100% {
+    transform: translateX(-15px) scaleY(0.9);
+    opacity: 0.2;
+  }
+}
+
+/* Faceted Crystalline Prismatic Shimmer */
+@keyframes crystal-facet-shimmer {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  33% {
+    opacity: 0.75;
+  }
+  66% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes crystal-facet-specular {
+  0%, 100% {
+    opacity: 0.2;
+    transform: rotate(0deg) scale(0.98);
+  }
+  50% {
+    opacity: 0.8;
+    transform: rotate(1deg) scale(1.02);
+  }
+}
+
+/* Micro-Interaction System Tokens & Utilities */
+:root {
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+}
+
+/* Accessibility: Respect Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Universal Focus-Visible System for Keyboard Navigation */
+:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px #0B0F19, 0 0 0 4px #00F0FF !important;
+}
+
+/* Reusable Micro-Interaction Class Utilities */
+.interactive-btn {
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 180ms ease,
+              border-color 180ms ease,
+              box-shadow 180ms ease,
+              color 180ms ease,
+              opacity 180ms ease;
+  cursor: pointer;
+}
+.interactive-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.interactive-btn:active:not(:disabled) {
+  transform: translateY(0px) scale(0.97);
+}
+.interactive-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.interactive-card {
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 200ms ease,
+              box-shadow 200ms ease,
+              background-color 200ms ease;
+}
+.interactive-card:hover {
+  transform: translateY(-1.5px);
+}
+.interactive-card:active {
+  transform: translateY(0px);
+}
+
+.interactive-tab {
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+.interactive-tab:hover:not(:disabled) {
+  transform: translateY(-0.5px);
+}
+.interactive-tab:active:not(:disabled) {
+  transform: translateY(0px) scale(0.98);
+}
+
+.interactive-chip {
+  transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+.interactive-chip:hover {
+  transform: translateY(-1px);
+}
+.interactive-chip:active {
+  transform: translateY(0px) scale(0.96);
+}
+
+.interactive-icon-btn {
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 150ms ease,
+              border-color 150ms ease,
+              color 150ms ease,
+              box-shadow 150ms ease;
+  cursor: pointer;
+}
+.interactive-icon-btn:hover:not(:disabled) {
+  transform: scale(1.08);
+}
+.interactive-icon-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.interactive-nav-item {
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 180ms ease,
+              border-color 180ms ease,
+              color 180ms ease,
+              box-shadow 180ms ease;
+}
+.interactive-nav-item:hover {
+  transform: translateX(2px);
+}
+.interactive-nav-item:active {
+  transform: translateX(0px) scale(0.99);
+}
+
 .animate-spin-slow {
   animation: spin-slow 20s linear infinite;
 }
@@ -152,6 +530,46 @@
 
 .animate-pulse-glow {
   animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-spin-linear {
+  animation: spin-linear 18s linear infinite;
+}
+
+.animate-spin-reverse-linear {
+  animation: spin-reverse-linear 24s linear infinite;
+}
+
+.animate-energy-wave-1 {
+  animation: energy-wave-1 4.5s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+}
+
+.animate-energy-wave-2 {
+  animation: energy-wave-2 4.5s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+}
+
+.animate-brain-breathe {
+  animation: brain-breathe 4s ease-in-out infinite;
+}
+
+.animate-synapse-blink {
+  animation: synapse-blink 2.5s ease-in-out infinite;
+}
+
+.animate-light-ray-pulse {
+  animation: light-ray-pulse 4s ease-in-out infinite;
+}
+
+.animate-light-ray-drift {
+  animation: light-ray-drift 6s ease-in-out infinite;
+}
+
+.animate-crystal-facet {
+  animation: crystal-facet-shimmer 5s ease-in-out infinite;
+}
+
+.animate-crystal-specular {
+  animation: crystal-facet-specular 6s ease-in-out infinite;
 }
 
 

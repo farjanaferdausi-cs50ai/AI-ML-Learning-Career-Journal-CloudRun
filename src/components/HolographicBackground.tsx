@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const HolographicBackground: React.FC<{ className?: string }> = ({ className = '' }) => {
+const HolographicBackgroundComponent: React.FC<{ className?: string }> = ({ className = '' }) => {
   return (
     <div 
       className={`absolute inset-0 pointer-events-none z-0 overflow-hidden select-none rounded-2xl ${className}`}
@@ -222,3 +222,5 @@ export const HolographicBackground: React.FC<{ className?: string }> = ({ classN
     </div>
   );
 };
+
+export const HolographicBackground = React.memo(HolographicBackgroundComponent);

@@ -7,37 +7,58 @@ import {
   Flame, 
   Clock, 
   BookOpen, 
-  Target,
-  Sparkles,
-  Layers,
-  ArrowUpRight
+  Target, 
+  Sparkles, 
+  Layers, 
+  ArrowUpRight,
+  Check
 } from 'lucide-react';
-import type { CareerProgressData, JournalSession, Topic } from '../types';
+import type { CareerProgressData, JournalSession, Topic, SkillItem, GoalItem, LearningProgressStats } from '../types';
+import { AnalyticsSkeleton } from './common/LoadingState';
 
 interface ProgressViewProps {
   careerData: CareerProgressData;
   sessions: JournalSession[];
   topics: Topic[];
+  skills?: SkillItem[];
+  goals?: GoalItem[];
+  learningStats?: LearningProgressStats;
   onOpenCoachPrompt: (prompt: string) => void;
+  onToggleGoal?: (goalId: string, completed: boolean) => void;
+  onUpdateSkillLevel?: (skillId: string, level: number) => void;
+  isLoading?: boolean;
 }
 
-export const ProgressView: React.FC<ProgressViewProps> = ({
+const DEFAULT_SKILL_MATRIX = [
+  { id: 'skill-python', skill: 'Python & Data Engineering', level: 90, category: 'Fundamentals', platform: 'CodeBasics' },
+  { id: 'skill-math', skill: 'Linear Algebra & Statistics', level: 85, category: 'Theory', platform: 'CodeBasics' },
+  { id: 'skill-pytorch', skill: 'Deep Learning & PyTorch', level: 82, category: 'Core ML', platform: 'Ostad' },
+  { id: 'skill-transformers', skill: 'Transformers & Scaled Attention', level: 78, category: 'Gen AI', platform: 'Ostad / Research' },
+  { id: 'skill-gcp', skill: 'Google Cloud Vertex AI & Run', level: 75, category: 'Cloud Engineering', platform: 'Google Cloud Gen AI Academy' },
+  { id: 'skill-portfolio', skill: 'Production AI Portfolio', level: 70, category: 'Projects', platform: 'CodeAlpha' }
+];
+
+const ProgressViewComponent: React.FC<ProgressViewProps> = ({
   careerData,
   sessions,
   topics,
-  onOpenCoachPrompt
+  skills,
+  goals,
+  learningStats,
+  onOpenCoachPrompt,
+  onToggleGoal,
+  onUpdateSkillLevel,
+  isLoading = false
 }) => {
-  const activeTopicsCount = topics.filter(t => t.isActive).length;
+  const activeTopicsCount = React.useMemo(() => topics.filter(t => t.isActive).length, [topics]);
   const completedSessionsCount = sessions.length;
 
-  const skillMatrix = [
-    { skill: 'Python & Data Engineering', level: 90, category: 'Fundamentals', platform: 'CodeBasics' },
-    { skill: 'Linear Algebra & Statistics', level: 85, category: 'Theory', platform: 'CodeBasics' },
-    { skill: 'Deep Learning & PyTorch', level: 82, category: 'Core ML', platform: 'Ostad' },
-    { skill: 'Transformers & Scaled Attention', level: 78, category: 'Gen AI', platform: 'Ostad / Research' },
-    { skill: 'Google Cloud Vertex AI & Run', level: 75, category: 'Cloud Engineering', platform: 'Google Cloud Gen AI Academy' },
-    { skill: 'Production AI Portfolio', level: 70, category: 'Projects', platform: 'CodeAlpha' }
-  ];
+  const displaySkills = (skills && skills.length > 0) ? skills : DEFAULT_SKILL_MATRIX;
+  const overallPercentage = learningStats?.progressPercentage || 72;
+
+  if (isLoading) {
+    return <AnalyticsSkeleton />;
+  }
 
   return (
     <div className="space-y-6">
@@ -61,7 +82,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           <div className="flex items-center gap-3">
             <span className="px-3 py-1.5 rounded-xl bg-[#091228] border border-[#1a2d5c] text-xs font-mono text-[#00F0FF] flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4" />
-              <span>Overall Transition: 82% Ready</span>
+              <span>Overall Transition: {overallPercentage}% Ready</span>
             </span>
           </div>
         </div>
@@ -92,7 +113,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
             <span className="text-xs font-mono">Study Platforms</span>
             <Layers className="w-4 h-4 text-purple-400" />
           </div>
-          <div className="text-2xl font-bold text-white font-mono">4</div>
+          <div className="text-2xl font-bold text-white font-mono">{careerData.learningPlatforms.length || 4}</div>
           <div className="text-[11px] text-slate-400 mt-1">Ostad, CodeBasics, GCP, CodeAlpha</div>
         </div>
 
@@ -101,8 +122,8 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
             <span className="text-xs font-mono">Target Position</span>
             <Award className="w-4 h-4 text-[#00F0FF]" />
           </div>
-          <div className="text-sm font-bold text-white mt-1">AI/ML Engineer</div>
-          <div className="text-[11px] text-cyan-400 font-mono mt-1">Transition Score: 82%</div>
+          <div className="text-sm font-bold text-white mt-1">{careerData.targetRole || 'AI/ML Engineer'}</div>
+          <div className="text-[11px] text-cyan-400 font-mono mt-1">Transition Score: {overallPercentage}%</div>
         </div>
       </div>
 
@@ -113,12 +134,12 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
             <BarChart2 className="w-4 h-4 text-[#00F0FF]" />
             <h3 className="text-sm font-bold text-white">Technical Competency Breakdown</h3>
           </div>
-          <span className="text-xs font-mono text-slate-400">Target Competency Benchmarks</span>
+          <span className="text-xs font-mono text-slate-400">Target Competency Benchmarks (Interactive)</span>
         </div>
 
         <div className="space-y-4">
-          {skillMatrix.map((item, idx) => (
-            <div key={idx} className="space-y-1.5">
+          {displaySkills.map((item, idx) => (
+            <div key={item.id || idx} className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-white">{item.skill}</span>
@@ -129,7 +150,9 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                     via {item.platform}
                   </span>
                 </div>
-                <span className="font-mono font-bold text-[#00F0FF]">{item.level}%</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-[#00F0FF]">{item.level}%</span>
+                </div>
               </div>
 
               <div className="w-full h-2 bg-[#091124] rounded-full overflow-hidden">
@@ -152,6 +175,53 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Weekly & Transition Goals Section */}
+      {goals && goals.length > 0 && (
+        <div className="p-6 rounded-2xl bg-[#070e20] border border-[#142347] shadow-lg space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[#121f3d]">
+            <div className="flex items-center gap-2">
+              <Target className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-sm font-bold text-white">Active Milestone Goals</h3>
+            </div>
+            <span className="text-xs font-mono text-slate-400">{goals.filter(g => g.completed).length} / {goals.length} Completed</span>
+          </div>
+
+          <div className="space-y-2.5">
+            {goals.map((goal) => (
+              <div 
+                key={goal.id} 
+                className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
+                  goal.completed 
+                    ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300' 
+                    : 'bg-[#091329] border-[#18284e] text-slate-200 hover:border-cyan-500/40'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => onToggleGoal && onToggleGoal(goal.id, !goal.completed)}
+                    className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors cursor-pointer ${
+                      goal.completed
+                        ? 'bg-emerald-500 border-emerald-400 text-slate-950'
+                        : 'border-slate-600 hover:border-cyan-400'
+                    }`}
+                  >
+                    {goal.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                  </button>
+                  <span className={`text-xs ${goal.completed ? 'line-through opacity-80' : 'font-medium'}`}>
+                    {goal.title}
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#0b1633] border border-[#1a2d59] text-slate-400">
+                  {goal.category}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+export const ProgressView = React.memo(ProgressViewComponent);

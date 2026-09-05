@@ -1,11 +1,78 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
+
+    // 1. GLOBAL SAFETY NET: Default-deny all unexpected top-level queries or orphaned paths
     match /{document=**} {
       allow read, write: if false;
+    }
+
+    // --- HELPER FUNCTIONS ---
+
+    // Checks whether the incoming request is from an authenticated user
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Checks whether the incoming request user matches the target userId
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Hardened ID string validator preventing denial-of-wallet or invalid character injections
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Role-Based Access Control: Evaluates if the caller is an active administrator.
+    // Checks the server-side role on the caller's /users/{uid} document OR bootstrapped app owner identity.
+    function isAdmin() {
+      return isSignedIn() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+        (request.auth.token.email == 'farjana.rafi1983@gmail.com' && request.auth.token.email_verified == true)
+      );
+    }
+
+    // --- ROOT USERS COLLECTION ---
+    // /users/{userId}: Contains root account metadata and RBAC role assignment
+    // - READ: Users can read their own document; Admins can read any user document.
+    // - LIST: Only Admins can list all user documents across the collection.
+    // - CREATE: A user can create their own document, but role MUST default to 'user' (cannot self-assign 'admin').
+    // - UPDATE: A user can update their own document, but CANNOT modify the 'role' field (role is immutable from client).
+    // - DELETE: Only Admins can delete a user document.
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      
+      // On user creation: must be owner, and role must be 'user' (cannot self-elevate to admin)
+      allow create: if isOwner(userId) && 
+        (!('role' in request.resource.data) || request.resource.data.role == 'user');
+
+      // On user update: must be owner, and 'role' cannot be modified via client SDK (only server Admin SDK can alter role)
+      allow update: if isOwner(userId) && 
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) || 
+         request.resource.data.role == resource.data.role);
+
+      allow delete: if isAdmin();
+
+      // --- USER SUBCOLLECTIONS ---
+      // Scoped data subcollections: profile, learningProgress, courses, skills, projects, goals, journalEntries, sessions, studySessions, aiRecommendations, topics.
+      // - READ: Owner has full read access; Admins have read access for cross-user monitoring.
+      // - WRITE: Owner has exclusive write access.
+      match /{allSubcollections=**} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId);
+      }
+    }
+
+    // --- ADMIN AUDIT LOG COLLECTION ---
+    // /admin_audit_log/{logId}: Stores immutable logs of role promotions, demotions, and administrative actions.
+    // - READ: Only Admins can read audit logs.
+    // - WRITE: Client writes are strictly forbidden (writable ONLY via server-side Firebase Admin SDK).
+    match /admin_audit_log/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
   }
 }

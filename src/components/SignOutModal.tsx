@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { LogOut, AlertTriangle, X } from 'lucide-react';
 
 interface SignOutModalProps {
@@ -14,11 +14,26 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
   onConfirmSignOut,
   isSigningOut = false
 }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-md glass-panel-glow rounded-2xl p-6 border border-red-500/30 shadow-[0_0_40px_rgba(239,68,68,0.2)]">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+    >
+      <div 
+        className="relative w-full max-w-md glass-panel-glow rounded-2xl p-6 border border-red-500/30 shadow-[0_0_40px_rgba(239,68,68,0.2)]"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400">
