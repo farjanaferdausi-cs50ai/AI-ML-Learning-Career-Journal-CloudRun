@@ -1063,6 +1063,7 @@ function AppContent() {
           topics={topics}
           sessions={sessions}
           projects={projects}
+          onUpdateSessionLocation={handleUpdateSessionLocation}
         />
 
         {/* Global Firestore Sync Error Banner */}

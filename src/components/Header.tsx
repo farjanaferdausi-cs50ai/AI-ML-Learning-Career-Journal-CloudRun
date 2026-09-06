@@ -14,12 +14,14 @@ import {
   Menu,
   BrainCircuit,
   Activity,
-  MapPin,
   X,
+  MapPin,
   Loader2,
   CheckCircle2,
   AlertTriangle,
   RotateCw,
+  ExternalLink,
+  Trash2,
   BookOpen,
   Layers,
   Cpu,
@@ -28,8 +30,10 @@ import {
   CornerDownLeft
 } from 'lucide-react';
 import type { User } from 'firebase/auth';
-import type { UserRole, Topic, JournalSession, ProjectItem } from '../types';
+import type { UserRole, Topic, JournalSession, ProjectItem, JournalLocation } from '../types';
 import { NotificationPopover, INITIAL_NOTIFICATIONS } from './NotificationPopover';
+import { reverseGeocode, getGoogleMapsUrl } from '../lib/googleMaps';
+import { LocationPickerModal } from './LocationPickerModal';
 
 export interface SearchItem {
   id: string;
@@ -55,6 +59,7 @@ interface HeaderProps {
   topics?: Topic[];
   sessions?: JournalSession[];
   projects?: ProjectItem[];
+  onUpdateSessionLocation?: (sessionId: string, location: JournalLocation | null) => Promise<void> | void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -69,11 +74,15 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMobileMenu,
   topics = [],
   sessions = [],
-  projects = []
+  projects = [],
+  onUpdateSessionLocation
 }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showLocation, setShowLocation] = useState(false);
+  const [isFullMapPickerOpen, setIsFullMapPickerOpen] = useState(false);
+  const [detectedPlace, setDetectedPlace] = useState('');
+  const [isTaggingSaving, setIsTaggingSaving] = useState(false);
   const [locationState, setLocationState] = useState<{
     status: 'idle' | 'detecting' | 'active' | 'denied' | 'not_detected';
     coords: { lat: number; lng: number; accuracy?: number } | null;
@@ -85,6 +94,115 @@ export const Header: React.FC<HeaderProps> = ({
     timestamp: null,
     errorMsg: null,
   });
+
+  const locationRef = useRef<HTMLDivElement>(null);
+
+  // The current active / most recent session
+  const currentSession = useMemo(() => {
+    return sessions && sessions.length > 0 ? sessions[0] : null;
+  }, [sessions]);
+
+  // Real browser Geolocation API request (ONLY on user click, never on load)
+  const requestBrowserLocation = () => {
+    if (typeof window === 'undefined' || !navigator || !navigator.geolocation) {
+      setLocationState({
+        status: 'not_detected',
+        coords: null,
+        timestamp: Date.now(),
+        errorMsg: 'Geolocation is not supported by your browser.'
+      });
+      return;
+    }
+
+    setLocationState(prev => ({
+      ...prev,
+      status: 'detecting',
+      errorMsg: null
+    }));
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const accuracy = pos.coords.accuracy;
+        setLocationState({
+          status: 'active',
+          coords: { lat, lng, accuracy },
+          timestamp: pos.timestamp || Date.now(),
+          errorMsg: null
+        });
+
+        try {
+          const place = await reverseGeocode(lat, lng);
+          setDetectedPlace(place);
+        } catch {
+          setDetectedPlace(`${lat.toFixed(4)}°, ${lng.toFixed(4)}°`);
+        }
+      },
+      (err) => {
+        if (err.code === 1 || err.code === err.PERMISSION_DENIED) {
+          setLocationState({
+            status: 'denied',
+            coords: null,
+            timestamp: Date.now(),
+            errorMsg: 'Permission Denied: Location access was blocked in browser settings.'
+          });
+        } else {
+          setLocationState({
+            status: 'not_detected',
+            coords: null,
+            timestamp: Date.now(),
+            errorMsg: err.message || 'Location could not be determined.'
+          });
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      }
+    );
+  };
+
+  const handleLocationToggle = () => {
+    setShowLocation(prev => {
+      const next = !prev;
+      if (next) {
+        setShowNotifications(false);
+        setShowProfileMenu(false);
+        // Explicitly trigger geolocation only at the moment user clicks this icon
+        requestBrowserLocation();
+      }
+      return next;
+    });
+  };
+
+  const handleTagCurrentEntry = async () => {
+    if (!currentSession?.id || !locationState.coords) return;
+    setIsTaggingSaving(true);
+    try {
+      const newLoc: JournalLocation = {
+        lat: locationState.coords.lat,
+        lng: locationState.coords.lng,
+        placeName: detectedPlace.trim() || `${locationState.coords.lat.toFixed(4)}°, ${locationState.coords.lng.toFixed(4)}°`
+      };
+      if (onUpdateSessionLocation) {
+        await onUpdateSessionLocation(currentSession.id, newLoc);
+      }
+    } finally {
+      setIsTaggingSaving(false);
+    }
+  };
+
+  const handleRemoveCurrentLocation = async () => {
+    if (!currentSession?.id || !onUpdateSessionLocation) return;
+    setIsTaggingSaving(true);
+    try {
+      await onUpdateSessionLocation(currentSession.id, null);
+    } finally {
+      setIsTaggingSaving(false);
+    }
+  };
   const [unreadCount, setUnreadCount] = useState<number>(() => {
     try {
       const saved = localStorage.getItem('aiml_journal_notifications');
@@ -109,7 +227,6 @@ export const Header: React.FC<HeaderProps> = ({
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const locationRef = useRef<HTMLDivElement>(null);
 
   // Comprehensive searchable index covering Learning Modules, Focus Areas, Recent Activities, Journal Entries, and Projects
   const allSearchItems = useMemo<SearchItem[]>(() => {
@@ -550,78 +667,6 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  // Real browser Geolocation API request (strictly on demand upon user tap)
-  const requestBrowserLocation = () => {
-    if (typeof window === 'undefined' || !navigator || !navigator.geolocation) {
-      setLocationState({
-        status: 'not_detected',
-        coords: null,
-        timestamp: Date.now(),
-        errorMsg: 'Geolocation is not supported by your browser.'
-      });
-      return;
-    }
-
-    setLocationState(prev => ({
-      ...prev,
-      status: 'detecting',
-      errorMsg: null
-    }));
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocationState({
-          status: 'active',
-          coords: {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            accuracy: pos.coords.accuracy
-          },
-          timestamp: pos.timestamp || Date.now(),
-          errorMsg: null
-        });
-      },
-      (err) => {
-        // err.code 1 = PERMISSION_DENIED
-        // err.code 2 = POSITION_UNAVAILABLE
-        // err.code 3 = TIMEOUT
-        if (err.code === 1 || err.code === err.PERMISSION_DENIED) {
-          setLocationState({
-            status: 'denied',
-            coords: null,
-            timestamp: Date.now(),
-            errorMsg: 'Permission Denied: Location access was blocked in browser settings.'
-          });
-        } else {
-          setLocationState({
-            status: 'not_detected',
-            coords: null,
-            timestamp: Date.now(),
-            errorMsg: err.message || 'Location could not be determined.'
-          });
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000
-      }
-    );
-  };
-
-  const handleLocationToggle = () => {
-    setShowLocation(prev => {
-      const next = !prev;
-      if (next) {
-        setShowNotifications(false);
-        setShowProfileMenu(false);
-        // Only trigger geolocation detection on tap
-        requestBrowserLocation();
-      }
-      return next;
-    });
-  };
-
   // Close menus on outside click and on Escape key
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -635,19 +680,19 @@ export const Header: React.FC<HeaderProps> = ({
         }
       }
 
+      // Location outside click
+      if (locationRef.current && !locationRef.current.contains(target)) {
+        const locBtn = document.getElementById('header-location-btn');
+        if (!locBtn?.contains(target)) {
+          setShowLocation(false);
+        }
+      }
+
       // Profile menu outside click
       if (profileMenuRef.current && !profileMenuRef.current.contains(target)) {
         const profileBtn = document.getElementById('user-profile-btn');
         if (!profileBtn?.contains(target)) {
           setShowProfileMenu(false);
-        }
-      }
-
-      // Location menu outside click
-      if (locationRef.current && !locationRef.current.contains(target)) {
-        const locBtn = document.getElementById('location-status-btn');
-        if (!locBtn?.contains(target)) {
-          setShowLocation(false);
         }
       }
     };
@@ -957,7 +1002,7 @@ export const Header: React.FC<HeaderProps> = ({
           <Search className="w-4 h-4" />
         </button>
         
-        {/* Location Status Popover (Directly to the left of notification bell) */}
+        {/* Location Status & Tag Popover (Directly to the left of notification bell) */}
         <div className="relative" ref={locationRef}>
           <button
             id="header-location-btn"
@@ -968,36 +1013,45 @@ export const Header: React.FC<HeaderProps> = ({
                 ? 'bg-[#00F0FF]/15 border-[#00F0FF] text-[#00F0FF] shadow-[0_0_16px_rgba(0,240,255,0.3)]' 
                 : 'bg-[#131826] border-[#1E293B] text-[#CBD5E1] hover:text-[#00F0FF] hover:border-[#00F0FF]/50 hover:bg-[#1A2338]'
             }`}
-            aria-label="Location Status"
+            aria-label="Tag Location on Journal Entry"
             aria-haspopup="dialog"
             aria-expanded={showLocation}
-            title="Location Status"
+            title={currentSession?.location ? `Tagged Location: ${currentSession.location.placeName}` : "Tag Study Session Location"}
           >
             <MapPin className="w-4 h-4 transition-transform duration-200 hover:scale-110" />
-            {locationState.status === 'active' && (
+            
+            {/* Status indicator badge */}
+            {currentSession?.location ? (
               <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]" />
-            )}
-            {locationState.status === 'denied' && (
+            ) : locationState.status === 'active' ? (
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#00F0FF]" />
+            ) : locationState.status === 'denied' ? (
               <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-400 shadow-[0_0_6px_#f43f5e]" />
-            )}
-            {locationState.status === 'not_detected' && (
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b]" />
-            )}
-            {locationState.status === 'detecting' && (
+            ) : locationState.status === 'detecting' ? (
               <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-            )}
+            ) : null}
           </button>
 
-          {/* Small Location Status Panel */}
+          {/* Location Popover Panel */}
           {showLocation && (
             <div 
               id="header-location-panel"
-              className="absolute left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 mt-2 w-72 rounded-xl bg-[#131826] border border-[#1E293B] shadow-2xl p-3.5 z-50 animate-in fade-in duration-150 text-xs font-mono"
+              className="absolute left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 mt-2 w-80 sm:w-96 rounded-xl bg-[#131826] border border-[#1E293B] shadow-2xl p-4 z-50 animate-in fade-in duration-150 text-xs font-mono"
             >
+              {/* Header */}
               <div className="flex items-center justify-between pb-2.5 border-b border-[#1E293B] mb-3">
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-[#00F0FF]" />
-                  <span className="font-bold text-white tracking-wide uppercase text-[11px]">Location Status</span>
+                  <div className="p-1 rounded-md bg-[#00F0FF]/15 border border-[#00F0FF]/40 text-[#00F0FF]">
+                    <MapPin className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-white tracking-wide uppercase text-[11px] block">
+                      Study Session Location
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      Tag current journal entry
+                    </span>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -1009,53 +1063,122 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               </div>
 
-              {/* Status Details */}
-              <div className="space-y-3">
+              {/* Current Session Indicator */}
+              <div className="p-2.5 rounded-lg bg-[#0B0F19] border border-[#1E293B] mb-3">
+                <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <BookOpen className="w-3 h-3" />
+                  <span>Current Journal Entry</span>
+                </div>
+                {currentSession ? (
+                  <div>
+                    <div className="text-white text-xs font-semibold line-clamp-1">
+                      {currentSession.summary?.whatWasWorkedOn || currentSession.topics?.[0] || 'AI/ML Study Reflection'}
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">
+                      {new Date(currentSession.createdAt).toLocaleDateString()} • {currentSession.topics.slice(0, 2).join(', ') || 'AI/ML'}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-slate-400 text-[11px]">
+                    No saved journal entry yet. Location will be ready to tag when you complete an AI Coach session.
+                  </div>
+                )}
+              </div>
+
+              {/* Existing Tagged Location on Current Session (if any) */}
+              {currentSession?.location && (
+                <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 mb-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-emerald-400 font-bold flex items-center gap-1.5 text-[11px]">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Currently Tagged Venue
+                    </span>
+                    <a
+                      href={getGoogleMapsUrl(currentSession.location)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-cyan-300 hover:underline flex items-center gap-1"
+                    >
+                      <span>Google Maps</span>
+                      <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  </div>
+                  <div className="text-white font-medium text-xs break-words">
+                    📍 {currentSession.location.placeName}
+                  </div>
+                  <div className="text-[10px] text-slate-400 flex justify-between">
+                    <span>{currentSession.location.lat.toFixed(4)}°, {currentSession.location.lng.toFixed(4)}°</span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveCurrentLocation}
+                      disabled={isTaggingSaving}
+                      className="text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <Trash2 className="w-2.5 h-2.5" />
+                      <span>Remove</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Live Geolocation Detection State */}
+              <div className="space-y-2.5 mb-3">
                 {locationState.status === 'detecting' && (
                   <div className="p-3 rounded-lg bg-[#0c1322] border border-cyan-500/30 flex items-center gap-2.5 text-cyan-300">
                     <Loader2 className="w-4 h-4 animate-spin text-[#00F0FF] shrink-0" />
                     <div>
-                      <div className="font-bold text-xs text-white">Detecting Location...</div>
-                      <div className="text-[10px] text-slate-400">Requesting browser Geolocation API</div>
+                      <div className="font-bold text-xs text-white">Detecting Device GPS...</div>
+                      <div className="text-[10px] text-slate-400">Requesting browser Geolocation permission</div>
                     </div>
                   </div>
                 )}
 
-                {locationState.status === 'active' && (
-                  <div className="space-y-2">
-                    <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 font-bold text-xs">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Active</span>
-                      </div>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold uppercase tracking-wider">
-                        Detected
+                {locationState.status === 'active' && locationState.coords && (
+                  <div className="p-2.5 rounded-lg bg-[#0c1322] border border-cyan-500/30 space-y-2">
+                    <div className="flex items-center justify-between text-cyan-300">
+                      <span className="font-bold text-xs flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        Detected GPS Location
                       </span>
+                      {locationState.coords.accuracy != null && (
+                        <span className="text-[10px] text-slate-400 font-mono">±{Math.round(locationState.coords.accuracy)}m</span>
+                      )}
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 block mb-1">Venue / Place Name:</label>
+                      <input
+                        type="text"
+                        value={detectedPlace}
+                        onChange={(e) => setDetectedPlace(e.target.value)}
+                        placeholder="e.g. MIT Stata Center / Home Study Lab"
+                        className="w-full bg-[#131826] border border-[#1E293B] focus:border-[#00F0FF] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-slate-400">
+                      <span>Lat: {locationState.coords.lat.toFixed(4)}°</span>
+                      <span>Lng: {locationState.coords.lng.toFixed(4)}°</span>
                     </div>
 
-                    {locationState.coords && (
-                      <div className="p-2.5 rounded-lg bg-[#0c1322] border border-[#1E293B] text-[11px] space-y-1 text-slate-300">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Latitude:</span>
-                          <span className="text-cyan-300 font-bold">{locationState.coords.lat.toFixed(4)}°</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Longitude:</span>
-                          <span className="text-cyan-300 font-bold">{locationState.coords.lng.toFixed(4)}°</span>
-                        </div>
-                        {locationState.coords.accuracy != null && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-400">Accuracy:</span>
-                            <span className="text-slate-300 font-mono">±{Math.round(locationState.coords.accuracy)}m</span>
-                          </div>
+                    {/* Tag Button */}
+                    {currentSession && (
+                      <button
+                        type="button"
+                        onClick={handleTagCurrentEntry}
+                        disabled={isTaggingSaving}
+                        className="w-full mt-1.5 flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-gradient-to-r from-[#00F0FF] to-cyan-500 hover:from-cyan-400 hover:to-cyan-600 text-[#040817] font-bold text-xs transition-all shadow-md shadow-cyan-500/20 cursor-pointer disabled:opacity-50"
+                      >
+                        {isTaggingSaving ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Saving to Firestore...</span>
+                          </>
+                        ) : (
+                          <>
+                            <MapPin className="w-3.5 h-3.5" />
+                            <span>Tag to Current Journal Entry</span>
+                          </>
                         )}
-                        {locationState.timestamp && (
-                          <div className="flex justify-between text-[10px] pt-1 border-t border-[#1E293B]">
-                            <span className="text-slate-500">Updated:</span>
-                            <span className="text-slate-400">{new Date(locationState.timestamp).toLocaleTimeString()}</span>
-                          </div>
-                        )}
-                      </div>
+                      </button>
                     )}
                   </div>
                 )}
@@ -1067,7 +1190,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <span>Permission Denied</span>
                     </div>
                     <p className="text-[10px] text-slate-300 leading-relaxed">
-                      Location access was blocked by your browser. Please allow location permissions in your browser address bar to tag study sessions.
+                      Location access was blocked in browser settings. You can still manually search and tag any study venue using the Interactive Map Picker.
                     </p>
                   </div>
                 )}
@@ -1076,21 +1199,17 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-1.5 text-amber-400">
                     <div className="flex items-center gap-1.5 font-bold text-xs">
                       <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Not Detected</span>
+                      <span>Location Not Detected</span>
                     </div>
                     <p className="text-[10px] text-slate-300 leading-relaxed">
-                      {locationState.errorMsg || 'Unable to detect device coordinates from the browser Geolocation API.'}
+                      {locationState.errorMsg || 'Unable to determine GPS coordinates.'}
                     </p>
                   </div>
                 )}
+              </div>
 
-                {locationState.status === 'idle' && (
-                  <div className="p-2.5 rounded-lg bg-[#0c1322] border border-[#1E293B] text-slate-400 text-[10px] leading-relaxed">
-                    Browser location is queried on demand when you tap this icon.
-                  </div>
-                )}
-
-                {/* Refresh / Re-detect Button */}
+              {/* Action Buttons: Refresh GPS & Open Full Map Picker */}
+              <div className="space-y-1.5 pt-2 border-t border-[#1E293B]">
                 <button
                   type="button"
                   onClick={requestBrowserLocation}
@@ -1098,7 +1217,19 @@ export const Header: React.FC<HeaderProps> = ({
                   className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-[#0c1322] hover:bg-[#1A2338] border border-[#1E293B] hover:border-cyan-500/40 text-cyan-300 hover:text-white transition-all cursor-pointer text-[11px] font-mono font-medium disabled:opacity-50"
                 >
                   <RotateCw className={`w-3 h-3 ${locationState.status === 'detecting' ? 'animate-spin' : ''}`} />
-                  <span>{locationState.status === 'detecting' ? 'Detecting...' : 'Refresh Location'}</span>
+                  <span>{locationState.status === 'detecting' ? 'Detecting GPS...' : 'Re-Detect GPS Location'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLocation(false);
+                    setIsFullMapPickerOpen(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/30 hover:border-cyan-500 text-cyan-200 hover:text-white transition-all cursor-pointer text-[11px] font-mono font-medium"
+                >
+                  <MapPin className="w-3 h-3 text-[#00F0FF]" />
+                  <span>Open Full Map & Location Picker</span>
                 </button>
               </div>
             </div>
@@ -1113,7 +1244,6 @@ export const Header: React.FC<HeaderProps> = ({
               e.stopPropagation();
               setShowNotifications(prev => !prev);
               setShowProfileMenu(false);
-              setShowLocation(false);
             }}
             className={`relative min-w-[38px] min-h-[38px] flex items-center justify-center p-2 rounded-xl border transition-all duration-200 ease-out cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#00F0FF] focus-visible:outline-none ${
               showNotifications 
@@ -1148,7 +1278,6 @@ export const Header: React.FC<HeaderProps> = ({
               e.stopPropagation();
               setShowProfileMenu(prev => !prev);
               setShowNotifications(false);
-              setShowLocation(false);
             }}
             className="flex items-center gap-2 min-h-[38px] px-2.5 py-1 rounded-xl bg-[#131826] hover:bg-[#1A2338] border border-[#1E293B] hover:border-cyan-500/40 transition-all cursor-pointer shadow-sm group"
             aria-expanded={showProfileMenu}
@@ -1364,6 +1493,25 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Full Interactive Map Picker Modal */}
+      {isFullMapPickerOpen && (
+        <LocationPickerModal
+          isOpen={isFullMapPickerOpen}
+          initialLocation={currentSession?.location || (locationState.coords ? {
+            lat: locationState.coords.lat,
+            lng: locationState.coords.lng,
+            placeName: detectedPlace || 'Current Location'
+          } : null)}
+          onClose={() => setIsFullMapPickerOpen(false)}
+          onSelectLocation={async (loc) => {
+            if (currentSession?.id && onUpdateSessionLocation) {
+              await onUpdateSessionLocation(currentSession.id, loc);
+            }
+            setIsFullMapPickerOpen(false);
+          }}
+        />
       )}
 
     </header>
