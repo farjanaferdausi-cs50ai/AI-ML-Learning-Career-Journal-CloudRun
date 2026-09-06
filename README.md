@@ -176,3 +176,15 @@ Follow these steps to verify all features:
 11. **Sign Out**:
    - Click the logout icon in the top header.
    - Confirm sign-out in the modal.
+
+## 🖊️ Author
+
+**Farjana Ferdausi**
+
+AI/ML Engineering & Data Science, Fellow — Google Cloud Gen AI Academy APAC Edition (Cohort 3) | Agentic AI · RAG · Gemini · ADK · BigQuery MCP · Cloud Run | Former HR Professional (14+ years) at Radisson Blu Dhaka Water Garden, Bangladesh
+
+LinkedIn Profile: https://www.linkedin.com/in/farjana-ferdausi/
+
+Medium Blog Link: https://medium.com/@farjana.rafi1983/from-hr-to-ai-ml-how-i-built-a-production-grade-learning-journal-on-google-cloud-38627356026d
+
+Medium Profile: https://medium.com/@farjana.rafi1983
