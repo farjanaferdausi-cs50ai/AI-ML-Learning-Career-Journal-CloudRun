@@ -8,7 +8,8 @@ import {
   User 
 } from 'firebase/auth';
 import { 
-  getFirestore, 
+  initializeFirestore,
+  setLogLevel,
   collection, 
   doc, 
   setDoc, 
@@ -102,10 +103,21 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 
-// Use custom database ID if provisioned, else default
-export const db = firebaseConfigData.firestoreDatabaseId 
-  ? getFirestore(app, firebaseConfigData.firestoreDatabaseId)
-  : getFirestore(app);
+// Suppress internal Firestore connection retry warnings in the browser console
+try {
+  setLogLevel('error');
+} catch {
+  // Graceful fallback if not supported
+}
+
+// Initialize Firestore with long-polling fallback to prevent WebChannel RPC 'Listen' stream transport disconnects behind container reverse proxies
+export const db = initializeFirestore(
+  app,
+  {
+    experimentalForceLongPolling: true,
+  },
+  firebaseConfigData.firestoreDatabaseId || undefined
+);
 
 // Test Firestore connection on boot
 export async function testConnection(): Promise<boolean> {
