@@ -12,6 +12,7 @@ import {
   CAREER_INTELLIGENCE_SYSTEM_INSTRUCTION,
   TRENDS_ANALYSIS_SYSTEM_INSTRUCTION
 } from './server/gemini.js';
+import { generateOfflineCoachResponse } from './server/coachEngine.js';
 import {
   verifyAuthToken,
   getUserRole,
@@ -111,10 +112,10 @@ app.post('/api/coach/generate', async (req: Request, res: Response) => {
       }
     }
 
-    // Append active topics context to the latest message if present
+    // Append active topics context after the user message if present
     let enrichedPrompt = message;
-    if (activeTopics.length > 0) {
-      enrichedPrompt = `[Context - Active Study Focus Topics: ${activeTopics.join(', ')}]\n\n${message}`;
+    if (activeTopics && activeTopics.length > 0) {
+      enrichedPrompt = `${message}\n\n[Active Study Focus Topics: ${activeTopics.join(', ')}]`;
     }
 
     contents.push({
@@ -141,77 +142,9 @@ app.post('/api/coach/generate', async (req: Request, res: Response) => {
         }
       });
     } catch (apiErr: any) {
-      console.log('[AI Coach] Operating in resilient offline mode with built-in curriculum intelligence.');
+      console.log('[AI Coach] Operating in resilient offline mode with built-in curriculum intelligence:', apiErr?.message);
       
-      const qLower = message.toLowerCase();
-      let guidance = '';
-
-      if (qLower.includes('attention') || qLower.includes('transformer') || qLower.includes('qkv') || qLower.includes('llm')) {
-        guidance = `### 🌟 Transformers & Self-Attention Guidance
-
-Great focus! In Transformer architectures, self-attention allows each token to dynamically compute relevance scores with every other token in the sequence.
-
-**Conceptual Bridge from HR to AI/ML:**
-> Think of Query, Key, and Value ($Q, K, V$) matrices like an agile enterprise project allocation:
-> - **Query ($Q$):** The project or team requirement searching for specialized capabilities.
-> - **Key ($K$):** The published skillsets and qualifications of candidate contributors.
-> - **Value ($V$):** The actual deliverable contribution provided once the optimal match is weighted ($\text{softmax}(\frac{QK^T}{\sqrt{d_k}})V$).
-
-**PyTorch Implementation Reference:**
-\`\`\`python
-import torch
-import torch.nn as nn
-import math
-
-class ScaledDotProductAttention(nn.Module):
-    def __init__(self, d_k):
-        super().__init__()
-        self.scale = 1.0 / math.sqrt(d_k)
-        self.softmax = nn.Softmax(dim=-1)
-
-    def forward(self, q, k, v, mask=None):
-        scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
-        if mask is not None:
-            scores = scores.masked_fill(mask == 0, -1e9)
-        attn_weights = self.softmax(scores)
-        return torch.matmul(attn_weights, v), attn_weights
-\`\`\`
-
-**Actionable Next Step:** Run this snippet in your Ostad/Google Colab workspace and verify that batch output tensors preserve the expected hidden dimension.`;
-      } else if (qLower.includes('backprop') || qLower.includes('gradient') || qLower.includes('loss') || qLower.includes('optim')) {
-        guidance = `### ⚡ Optimization & Backpropagation Core Principles
-
-Backpropagation computes the partial derivative of the scalar loss function with respect to every trainable parameter using the recursive Chain Rule of calculus.
-
-**Conceptual Bridge from HR to AI/ML:**
-> In talent leadership, an end-of-quarter performance gap (Loss) is traced backward through organizational hierarchy layers to calibrate individual contribution weights (Gradients). In neural networks:
-> $$\\frac{\\partial L}{\\partial W^{(l)}} = \\delta^{(l)} \\cdot (a^{(l-1)})^T$$
-
-**Key Debugging Checklist for Vanishing/Exploding Gradients:**
-1. Check activation functions (prefer \`ReLU\` or \`GELU\` over \`Sigmoid\` in deep architectures).
-2. Verify weight initialization (use He/Kaiming normal for ReLU layers).
-3. Apply Layer Normalization or Batch Normalization.
-4. Implement gradient clipping: \`torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)\`.`;
-      } else if (qLower.includes('bayes') || qLower.includes('probability') || qLower.includes('stats') || qLower.includes('math')) {
-        guidance = `### 📊 Bayesian Inference & Machine Learning Priors
-
-Bayes' Theorem updates our belief in a hypothesis given observed data evidence:
-$$P(\\theta | D) = \\frac{P(D | \\theta) \\cdot P(\\theta)}{P(D)}$$
-
-**Connecting Your 14+ Years Experience:**
-> Just as seasoned HR executives evaluate hiring candidates by balancing historical track record (Prior) against interview performance (Likelihood) to reach a final assessment (Posterior), Bayesian ML models incorporate domain distributions to resist overfitting on small sample sizes.`;
-      } else {
-        guidance = `### 🚀 AI/ML Engineering Career & Technical Check-In
-
-Your strategic transition from 14+ years in HR leadership to AI/ML engineering is progressing with strong momentum across **Ostad**, **CodeBasics**, **Google Cloud Gen AI Academy**, and **CodeAlpha**.
-
-**Core Study Recommendations for Today:**
-1. **Hands-on Execution:** Spend 70% of today's study block coding in PyTorch/Python rather than passive reading.
-2. **Foundations First:** Validate tensor shapes after every matrix multiplication or attention layer (\`print(x.shape)\`).
-3. **Journal Your Wins:** After completing your coding task, hit **End Session** to auto-log your structured reflections into Firestore.
-
-How can I help you break down today's specific coding or mathematical challenge?`;
-      }
+      const guidance = generateOfflineCoachResponse(message, history, activeTopics);
 
       return res.json({
         success: true,
@@ -221,13 +154,102 @@ How can I help you break down today's specific coding or mathematical challenge?
       });
     }
   } catch (err: any) {
-    console.error('Error in coach chat handler:', err);
-    return res.status(500).json({
-      success: false,
-      error: err?.message || 'Failed to process AI Coach request.'
+    console.warn('Recoverable error in coach chat handler:', err?.message);
+    const fallbackGuidance = generateOfflineCoachResponse(req.body?.message || '', req.body?.history || [], req.body?.activeTopics || []);
+    return res.status(200).json({
+      success: true,
+      data: {
+        response: fallbackGuidance
+      }
     });
   }
 });
+
+// Helper for dynamic contextual offline session summaries
+function synthesizeOfflineSessionSummary(conversation: any[], topics: string[]) {
+  const allText = conversation.map(c => c.content || '').join(' ').toLowerCase();
+  const activeTopics = topics.length > 0 ? topics : ['Deep Learning', 'PyTorch', 'AI/ML Engineering'];
+
+  let whatWasWorkedOn = `Focused study session on ${activeTopics.join(', ')}`;
+  let whatWasDifficult = 'Translating mathematical principles into clean tensor operations and robust pipelines.';
+  let whatWasAccomplished = 'Clarified architectural mechanics and validated conceptual foundations with AI Coach.';
+  let keyTakeaway = 'Bridging systems-level HR leadership with rigorous technical execution accelerates AI/ML engineering mastery.';
+  let actionableGoalTomorrow = 'Implement one focused PyTorch or Python script from scratch and verify tensor dimensions.';
+  let careerTransitionProgressNote = 'Each study session leverages 14+ years of strategic leadership to build a uniquely formidable engineering profile.';
+  const whatWasLearned: string[] = [];
+
+  if (allText.includes('attention') || allText.includes('transformer') || allText.includes('qkv')) {
+    whatWasWorkedOn = 'Transformer self-attention mechanism, QKV matrix projections, and PyTorch implementation';
+    whatWasDifficult = 'Aligning query-key dot product dimensions and understanding softmax scaling factor (1 / sqrt(d_k)).';
+    whatWasAccomplished = 'Successfully scaffolded ScaledDotProductAttention module in PyTorch with verified tensor shapes [B, T, C].';
+    keyTakeaway = 'Self-attention maps directly to organizational routing: dynamic queries matching talent keys to deliver weighted value.';
+    actionableGoalTomorrow = 'Extend self-attention to Multi-Head Attention and test forward pass with dummy batch inputs in Colab.';
+    whatWasLearned.push('Scaled Dot-Product Attention formulation (Softmax(QK^T / sqrt(d_k)) * V)');
+    whatWasLearned.push('Mapping enterprise talent allocation intuition to Q, K, V projections');
+    whatWasLearned.push('PyTorch tensor transposition and batch matrix multiplication');
+  } else if (allText.includes('backprop') || allText.includes('gradient') || allText.includes('loss') || allText.includes('chain rule')) {
+    whatWasWorkedOn = 'Optimization algorithms, gradient descent dynamics, and backpropagation calculus';
+    whatWasDifficult = 'Visualizing recursive application of the multivariate chain rule across hidden layer weights.';
+    whatWasAccomplished = 'Mapped loss backpropagation to HR performance feedback loops and reviewed gradient clipping techniques.';
+    keyTakeaway = 'Loss gradients are organizational feedback signals: calibrating individual layer contributions to minimize systemic error.';
+    actionableGoalTomorrow = 'Implement a simple 2-layer MLP with manual loss backward step in PyTorch to solidify computational graph flow.';
+    whatWasLearned.push('Recursive Chain Rule computation for scalar loss with respect to layer weights');
+    whatWasLearned.push('Preventing vanishing/exploding gradients with clipping and LayerNorm');
+    whatWasLearned.push('Analogy between organizational feedback loops and neural network weight updates');
+  } else if (allText.includes('bayes') || allText.includes('probability') || allText.includes('prior') || allText.includes('posterior')) {
+    whatWasWorkedOn = 'Bayesian inference, probability distributions, and machine learning decision theory';
+    whatWasDifficult = 'Balancing prior belief distributions against observed likelihood in small-sample scenarios.';
+    whatWasAccomplished = 'Connected Bayesian updating to senior HR candidate evaluation and evidence synthesis.';
+    keyTakeaway = 'Prior domain expertise combined with observed empirical data yields optimal, calibrated decision boundaries.';
+    actionableGoalTomorrow = 'Work through 3 Bayes theorem calculation exercises and review conjugate priors in CodeBasics notebook.';
+    whatWasLearned.push('Bayes Theorem formulation P(θ|D) = P(D|θ)P(θ) / P(D)');
+    whatWasLearned.push('Distinction between Prior, Likelihood, and Posterior distributions');
+    whatWasLearned.push('Applying Bayesian reasoning to resist overfitting on sparse datasets');
+  } else if (allText.includes('interview') || allText.includes('resume') || allText.includes('linkedin') || allText.includes('framing') || allText.includes('advantage')) {
+    whatWasWorkedOn = 'AI/ML engineering career strategy, interview positioning, and branding 14+ years HR leadership';
+    whatWasDifficult = 'Articulating technical credibility while highlighting executive leadership and organizational maturity.';
+    whatWasAccomplished = 'Formulated high-impact narrative framing HR systems mastery as a competitive advantage for senior engineering roles.';
+    keyTakeaway = 'Top engineering teams need technical builders who understand human systems, stakeholder alignment, and AI governance.';
+    actionableGoalTomorrow = 'Update LinkedIn headline and resume summary with quantified AI/ML project metrics and leadership bridges.';
+    whatWasLearned.push('Strategic positioning: framing domain mastery as enterprise AI alignment expertise');
+    whatWasLearned.push('STAR framework translation for technical and systems-architecture interviews');
+    whatWasLearned.push('Connecting organizational analytics background to ML data pipelines');
+  } else if (allText.includes('portfolio') || allText.includes('vertex') || allText.includes('gcp') || allText.includes('deploy') || allText.includes('cloud run')) {
+    whatWasWorkedOn = 'Production AI/ML portfolio architecture, Vertex AI integration, and Cloud Run serverless deployment';
+    whatWasDifficult = 'Selecting an end-to-end architecture that demonstrates production readiness beyond standard toy models.';
+    whatWasAccomplished = 'Defined blueprint for Production RAG Talent Matcher integrating hybrid search, Cross-Encoders, and Cloud Run.';
+    keyTakeaway = 'Deployable, tested full-stack ML applications with CI/CD and monitoring stand out far more than standalone notebooks.';
+    actionableGoalTomorrow = 'Scaffold FastAPI backend service and test Google Cloud Secret Manager integration locally.';
+    whatWasLearned.push('Vertex AI Vector Search integration with hybrid reciprocal rank fusion');
+    whatWasLearned.push('Serverless container deployment for ML microservices on Cloud Run');
+    whatWasLearned.push('Automated LLM evaluation workflows for production portfolios');
+  } else if (allText.includes('schedule') || allText.includes('time') || allText.includes('roadmap') || allText.includes('ostad') || allText.includes('burnout')) {
+    whatWasWorkedOn = 'Multi-platform study architecture and weekly time allocation across Ostad, CodeBasics, GCP, and CodeAlpha';
+    whatWasDifficult = 'Balancing concurrent course curricula without cognitive overload or fragmented execution.';
+    whatWasAccomplished = 'Established 70/30 hands-on coding to theory allocation with designated weekend project blocks.';
+    keyTakeaway = 'Consistency beats cramming: 90 minutes of daily deliberate PyTorch practice compounds faster than unfocused marathons.';
+    actionableGoalTomorrow = 'Block 90 minutes in Google Calendar for tomorrow morning and code the first Ostad assignment exercise.';
+    whatWasLearned.push('70/30 rule: dedicating 70% of study time to active implementation vs passive reading');
+    whatWasLearned.push('Platform synergy: using CodeBasics for math foundations and CodeAlpha for portfolio delivery');
+    whatWasLearned.push('Journaling milestones to track cumulative engineering momentum');
+  } else {
+    whatWasWorkedOn = `Interactive AI/ML mentoring session on ${activeTopics.join(' & ')}`;
+    whatWasAccomplished = 'Completed structured technical review and clarified core machine learning workflows with AI Coach.';
+    whatWasLearned.push(`Deep dive into ${activeTopics[0] || 'Machine Learning'} concepts`);
+    whatWasLearned.push('Hands-on code patterns and tensor manipulation strategies');
+    whatWasLearned.push('Connecting theoretical models to production engineering workflows');
+  }
+
+  return {
+    whatWasLearned,
+    whatWasWorkedOn,
+    whatWasDifficult,
+    whatWasAccomplished,
+    keyTakeaway,
+    actionableGoalTomorrow,
+    careerTransitionProgressNote
+  };
+}
 
 // POST /api/coach/summarize — Generate structured session summary
 app.post('/api/coach/summarize', async (req: Request, res: Response) => {
@@ -249,19 +271,29 @@ app.post('/api/coach/summarize', async (req: Request, res: Response) => {
 
     const prompt = `Please analyze the following AI/ML study session and output a structured JSON summary:\n\nActive Topics: ${topics.join(', ') || 'AI/ML Engineering'}\n\nTranscript:\n${conversationTranscript}`;
 
-    const rawSummary = await generateWithFallback({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      systemInstruction: SUMMARIZER_SYSTEM_INSTRUCTION,
-      responseMimeType: 'application/json'
-    });
+    let summaryObj = null;
 
-    let summaryObj;
     try {
-      summaryObj = JSON.parse(rawSummary);
-    } catch {
-      // Fallback cleanup if model wrapped in markdown fences
-      const cleaned = rawSummary.replace(/```json/g, '').replace(/```/g, '').trim();
-      summaryObj = JSON.parse(cleaned);
+      const rawSummary = await generateWithFallback({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        systemInstruction: SUMMARIZER_SYSTEM_INSTRUCTION,
+        responseMimeType: 'application/json'
+      });
+
+      try {
+        summaryObj = JSON.parse(rawSummary);
+      } catch {
+        // Fallback cleanup if model wrapped in markdown fences
+        const cleaned = rawSummary.replace(/```json/g, '').replace(/```/g, '').trim();
+        summaryObj = JSON.parse(cleaned);
+      }
+    } catch (aiErr: any) {
+      console.log('[AI Summarizer] Operating in resilient offline synthesis mode:', aiErr?.message);
+      summaryObj = synthesizeOfflineSessionSummary(conversation, topics);
+    }
+
+    if (!summaryObj) {
+      summaryObj = synthesizeOfflineSessionSummary(conversation, topics);
     }
 
     return res.json({
@@ -271,17 +303,11 @@ app.post('/api/coach/summarize', async (req: Request, res: Response) => {
       }
     });
   } catch (err: any) {
-    console.error('Error summarizing session:', err);
-    // Provide a structured graceful fallback
-    const fallbackSummary = {
-      whatWasLearned: ['Explored core AI/ML architectures and foundations'],
-      whatWasWorkedOn: 'AI/ML Learning session check-in and technical exploration',
-      whatWasDifficult: 'Navigating mathematical intuition and framework implementations',
-      whatWasAccomplished: 'Successfully deepened understanding and clarified machine learning workflows',
-      keyTakeaway: 'Continuous iterative practice accelerates the transition from HR strategy to AI/ML engineering mastery.',
-      actionableGoalTomorrow: 'Review PyTorch code implementations and build one focused demonstration script.',
-      careerTransitionProgressNote: 'Each technical session builds on 14+ years of strategic problem-solving to create a unique engineering perspective.'
-    };
+    console.warn('Unexpected error in session summarizer:', err?.message);
+    const fallbackSummary = synthesizeOfflineSessionSummary(
+      Array.isArray(req.body?.conversation) ? req.body.conversation : [],
+      Array.isArray(req.body?.topics) ? req.body.topics : []
+    );
 
     return res.json({
       success: true,

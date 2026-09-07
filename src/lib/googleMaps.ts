@@ -36,6 +36,10 @@ export async function loadGoogleMaps(): Promise<typeof google> {
     return window.google;
   }
 
+  if (typeof window !== 'undefined' && (window as any).googleMapsAuthFailed) {
+    throw new Error('GOOGLE_MAPS_REFERER_NOT_ALLOWED');
+  }
+
   if (loaderPromise) {
     return loaderPromise;
   }
@@ -71,19 +75,39 @@ export async function loadGoogleMaps(): Promise<typeof google> {
  * Reverse geocodes latitude/longitude coordinates to a friendly place name.
  */
 export async function reverseGeocode(lat: number, lng: number): Promise<string> {
-  try {
-    const googleInstance = await loadGoogleMaps();
-    const geocoder = new googleInstance.maps.Geocoder();
-    const response = await geocoder.geocode({ location: { lat, lng } });
+  // If Google Maps is available, attempt standard Google Maps geocoding
+  if (!(typeof window !== 'undefined' && (window as any).googleMapsAuthFailed)) {
+    try {
+      const googleInstance = await loadGoogleMaps();
+      const geocoder = new googleInstance.maps.Geocoder();
+      const response = await geocoder.geocode({ location: { lat, lng } });
 
-    if (response.results && response.results.length > 0) {
-      // Find the most appropriate formatted address or establishment name
-      const best = response.results[0];
-      return best.formatted_address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      if (response.results && response.results.length > 0) {
+        // Find the most appropriate formatted address or establishment name
+        const best = response.results[0];
+        return best.formatted_address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      }
+    } catch (err) {
+      console.warn('Google Maps reverse geocoding unavailable, trying fallback:', err);
     }
-  } catch (err) {
-    console.warn('Reverse geocoding unavailable:', err);
   }
+
+  // Graceful fallback: OpenStreetMap Nominatim reverse geocode
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.display_name) {
+        const parts = String(data.display_name).split(', ');
+        return parts.slice(0, 3).join(', ');
+      }
+    }
+  } catch {
+    // Silent fallback to clean coordinates representation
+  }
+
   return `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`;
 }
 

@@ -9,7 +9,9 @@ import {
   ExternalLink,
   Loader2,
   Trash2,
-  Info
+  Info,
+  AlertTriangle,
+  Copy
 } from 'lucide-react';
 import { loadGoogleMaps, reverseGeocode, getMapsApiKey } from '../lib/googleMaps';
 import type { JournalLocation } from '../types';
@@ -35,12 +37,35 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
   const [mapError, setMapError] = useState<string | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [hasApiKey, setHasApiKey] = useState<boolean>(true);
+  const [isReferrerRestricted, setIsReferrerRestricted] = useState<boolean>(false);
+  const [siteUrl, setSiteUrl] = useState<string>('');
+  const [copiedUrl, setCopiedUrl] = useState<boolean>(false);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  // Listen for Google Maps referrer or authentication failure
+  useEffect(() => {
+    const handleAuthFailure = (e: any) => {
+      setIsReferrerRestricted(true);
+      const origin = e?.detail?.siteUrl || (typeof window !== 'undefined' ? `${window.location.origin}/` : '');
+      setSiteUrl(origin);
+      setIsLoadingMap(false);
+      setMapError('Google Maps API key is restricted by HTTP Referrer in Google Cloud Console.');
+    };
+
+    window.addEventListener('google-maps-auth-failure', handleAuthFailure);
+    if (typeof window !== 'undefined' && (window as any).googleMapsAuthFailed) {
+      handleAuthFailure({ detail: { siteUrl: `${window.location.origin}/` } });
+    }
+
+    return () => {
+      window.removeEventListener('google-maps-auth-failure', handleAuthFailure);
+    };
+  }, []);
 
   // Sync initial state whenever modal opens and listen for Escape key
   useEffect(() => {
@@ -68,6 +93,14 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
     async function initMap() {
       try {
+        if (typeof window !== 'undefined' && (window as any).googleMapsAuthFailed) {
+          setIsReferrerRestricted(true);
+          setSiteUrl(`${window.location.origin}/`);
+          setIsLoadingMap(false);
+          setMapError('Google Maps API key is restricted by HTTP Referrer in Google Cloud Console.');
+          return;
+        }
+
         const apiKey = await getMapsApiKey();
         if (!isMounted) return;
 
@@ -382,7 +415,54 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
               </div>
             )}
 
-            {mapError && (
+            {isReferrerRestricted ? (
+              <div className="absolute inset-0 p-4 flex flex-col justify-between bg-[#070e20] z-20 overflow-y-auto text-left">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-cyan-400">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-400" />
+                    <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-white">
+                      Google Maps Domain Restriction Detected
+                    </h3>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    This API key is restricted by HTTP referrer in Google Cloud Console. To authorize vector maps here, add this URL to your API key's Website restrictions in Google Cloud Console:
+                  </p>
+                  <div className="p-2 rounded-lg bg-[#050b18] border border-[#182a52] flex items-center justify-between gap-2">
+                    <code className="text-[11px] text-[#00F0FF] font-mono break-all select-all">
+                      {siteUrl ? `${siteUrl}*` : `${typeof window !== 'undefined' ? window.location.origin : ''}/*`}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const text = siteUrl ? `${siteUrl}*` : `${window.location.origin}/*`;
+                        navigator.clipboard.writeText(text);
+                        setCopiedUrl(true);
+                        setTimeout(() => setCopiedUrl(false), 2000);
+                      }}
+                      className="px-2.5 py-1 rounded bg-[#091533] border border-cyan-500/40 text-cyan-300 hover:text-white text-[10px] font-mono flex items-center gap-1 hover:bg-[#0f2452] cursor-pointer flex-shrink-0"
+                    >
+                      {copiedUrl ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedUrl ? 'Copied' : 'Copy URL'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Fallback Location Preview */}
+                <div className="mt-2 pt-2 border-t border-[#142347]">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pb-1">
+                    <span>Fallback Map Preview:</span>
+                    <span className="text-cyan-300">{lat.toFixed(4)}°, {lng.toFixed(4)}°</span>
+                  </div>
+                  <div className="w-full h-24 rounded-lg overflow-hidden border border-[#182a52] relative bg-slate-900">
+                    <iframe
+                      title="Location Preview"
+                      className="w-full h-full border-0 pointer-events-none opacity-85"
+                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.01}%2C${lat - 0.01}%2C${lng + 0.01}%2C${lat + 0.01}&layer=mapnik&marker=${lat}%2C${lng}`}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : mapError ? (
               <div className="absolute inset-0 p-4 flex flex-col items-center justify-center bg-[#070e20] z-10 text-center gap-2">
                 <Info className="w-6 h-6 text-cyan-400" />
                 <p className="text-xs text-slate-300 max-w-md">{mapError}</p>
@@ -390,7 +470,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
                   Selected coordinates: <span className="text-cyan-300">{lat.toFixed(4)}°, {lng.toFixed(4)}°</span>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Interactive Map DOM node */}
             <div ref={mapContainerRef} className="w-full h-full" tabIndex={0} aria-label="Interactive Google Map" />

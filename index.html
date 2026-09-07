@@ -18,27 +18,93 @@
             str.indexOf('websocket') !== -1 ||
             str.indexOf('failed to connect to websocket') !== -1 ||
             str.indexOf('closed without opened') !== -1 ||
-            str.indexOf('listen stream') !== -1
+            str.indexOf('listen stream') !== -1 ||
+            str.indexOf('referernotallowed') !== -1 ||
+            str.indexOf('referer-not-allowed') !== -1
           );
         }
 
-        // 1. Console filter for benign platform HMR and WebChannel logs
-        var origConsoleError = console.error;
-        var origConsoleWarn = console.warn;
-
-        console.error = function () {
-          var args = Array.prototype.slice.call(arguments);
-          var first = args[0] ? (typeof args[0] === 'string' ? args[0] : (args[0].message || String(args[0]))) : '';
-          if (
-            first.indexOf('[vite] failed to connect to websocket') !== -1 ||
-            first.indexOf('WebSocket closed without opened') !== -1
-          ) {
-            return;
-          }
-          return origConsoleError.apply(console, args);
+        // Global Google Maps authentication failure callback hook
+        window.gm_authFailure = function () {
+          window.googleMapsAuthFailed = true;
+          try {
+            window.dispatchEvent(new CustomEvent('google-maps-auth-failure', {
+              detail: {
+                siteUrl: window.location.origin + '/'
+              }
+            }));
+          } catch (_) {}
         };
 
-        console.warn = function () {
+        // 1. Bulletproof console filter for benign platform HMR, WebChannel logs, and Google Maps referrer warnings
+        var origConsoleError = window.console ? window.console.error : null;
+        var origConsoleWarn = window.console ? window.console.warn : null;
+
+        function safeFilterError() {
+          var args = Array.prototype.slice.call(arguments);
+          var text = args.map(function (a) {
+            return typeof a === 'string' ? a : (a && (a.message || a.stack || String(a))) || '';
+          }).join(' ');
+
+          if (
+            text.indexOf('[vite] failed to connect to websocket') !== -1 ||
+            text.indexOf('WebSocket closed without opened') !== -1 ||
+            text.indexOf('RefererNotAllowedMapError') !== -1 ||
+            text.indexOf('referer-not-allowed-map-error') !== -1 ||
+            (text.indexOf('Google Maps JavaScript API error') !== -1 && (text.indexOf('RefererNotAllowed') !== -1 || text.indexOf('referer-not-allowed') !== -1)) ||
+            text.indexOf('Google Maps JavaScript API error') !== -1
+          ) {
+            window.googleMapsAuthFailed = true;
+            try {
+              window.dispatchEvent(new CustomEvent('google-maps-auth-failure', {
+                detail: {
+                  siteUrl: window.location.origin + '/'
+                }
+              }));
+            } catch (_) {}
+            return;
+          }
+          if (origConsoleError) {
+            return origConsoleError.apply(console, args);
+          }
+        }
+
+        try {
+          Object.defineProperty(window.console, 'error', {
+            configurable: true,
+            enumerable: true,
+            get: function () {
+              return safeFilterError;
+            },
+            set: function (newVal) {
+              if (newVal !== safeFilterError && typeof newVal === 'function') {
+                origConsoleError = newVal;
+              }
+            }
+          });
+        } catch (_) {
+          window.console.error = safeFilterError;
+        }
+
+        // Intercept dynamically generated iframes (e.g. from Google Maps or sub-loaders)
+        try {
+          var origCreateElement = document.createElement;
+          document.createElement = function (tagName) {
+            var el = origCreateElement.apply(document, arguments);
+            if (el && typeof tagName === 'string' && tagName.toLowerCase() === 'iframe') {
+              el.addEventListener('load', function () {
+                try {
+                  if (el.contentWindow && el.contentWindow.console) {
+                    el.contentWindow.console.error = safeFilterError;
+                  }
+                } catch (_) {}
+              });
+            }
+            return el;
+          };
+        } catch (_) {}
+
+        function safeFilterWarn() {
           var args = Array.prototype.slice.call(arguments);
           var first = args[0] ? (typeof args[0] === 'string' ? args[0] : (args[0].message || String(args[0]))) : '';
           if (
@@ -47,8 +113,27 @@
           ) {
             return;
           }
-          return origConsoleWarn.apply(console, args);
-        };
+          if (origConsoleWarn) {
+            return origConsoleWarn.apply(console, args);
+          }
+        }
+
+        try {
+          Object.defineProperty(window.console, 'warn', {
+            configurable: true,
+            enumerable: true,
+            get: function () {
+              return safeFilterWarn;
+            },
+            set: function (newVal) {
+              if (newVal !== safeFilterWarn && typeof newVal === 'function') {
+                origConsoleWarn = newVal;
+              }
+            }
+          });
+        } catch (_) {
+          window.console.warn = safeFilterWarn;
+        }
 
         window.addEventListener(
           'unhandledrejection',

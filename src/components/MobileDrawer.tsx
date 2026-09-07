@@ -167,7 +167,11 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             <button
               onClick={() => {
                 onClose();
-                onOpenUpgradeModal?.();
+                if (onOpenUpgradeModal) {
+                  onOpenUpgradeModal();
+                } else {
+                  onSelectTab('settings');
+                }
               }}
               className="w-full py-1.5 px-2 rounded-lg bg-gradient-to-r from-purple-600 to-[#00A3FF] text-white font-semibold text-[10px] flex items-center justify-center gap-1 cursor-pointer"
             >
