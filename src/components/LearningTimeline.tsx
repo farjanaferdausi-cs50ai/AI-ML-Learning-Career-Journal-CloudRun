@@ -28,8 +28,9 @@ import { TimelineSkeleton } from './common/LoadingState';
 import { EmptyState } from './common/EmptyState';
 import { ErrorState } from './common/ErrorState';
 import { LocationBadge } from './LocationBadge';
-import { LocationPickerModal } from './LocationPickerModal';
 import { getGoogleMapsUrl } from '../lib/googleMaps';
+
+const LocationPickerModal = React.lazy(() => import('./LocationPickerModal').then(m => ({ default: m.LocationPickerModal })));
 
 interface LearningTimelineProps {
   sessions: JournalSession[];
@@ -45,11 +46,6 @@ const DEFAULT_SAMPLE_SESSIONS: JournalSession[] = [
     userId: 'sample',
     createdAt: new Date('2025-05-28T14:45:00').getTime(),
     topics: ['Deep Learning', 'PyTorch', 'Transformers', 'LLM Systems'],
-    location: {
-      lat: 37.7749,
-      lng: -122.4194,
-      placeName: 'AI Research Lab & Study Hub, San Francisco, CA'
-    },
     conversation: [],
     summary: {
       keyTakeaway: 'Self-attention dynamically weights token relevance similar to strategic talent allocation across cross-functional enterprise units.',
@@ -1066,17 +1062,19 @@ export const LearningTimeline: React.FC<LearningTimelineProps> = ({
 
       {/* Location Picker Modal for Timeline item */}
       {locationModalSession && (
-        <LocationPickerModal
-          isOpen={!!locationModalSession}
-          initialLocation={locationModalSession.location || null}
-          onClose={() => setLocationModalSession(null)}
-          onSelectLocation={async (loc) => {
-            if (onUpdateSessionLocation && locationModalSession) {
-              await onUpdateSessionLocation(locationModalSession.id, loc);
-            }
-            setLocationModalSession(null);
-          }}
-        />
+        <React.Suspense fallback={null}>
+          <LocationPickerModal
+            isOpen={!!locationModalSession}
+            initialLocation={locationModalSession.location || null}
+            onClose={() => setLocationModalSession(null)}
+            onSelectLocation={async (loc) => {
+              if (onUpdateSessionLocation && locationModalSession) {
+                await onUpdateSessionLocation(locationModalSession.id, loc);
+              }
+              setLocationModalSession(null);
+            }}
+          />
+        </React.Suspense>
       )}
 
     </section>

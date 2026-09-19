@@ -12,7 +12,8 @@ import {
   LogOut,
   User as UserIcon,
   CheckCircle2,
-  X
+  X,
+  ArrowLeft
 } from 'lucide-react';
 import type { User } from 'firebase/auth';
 import type { GenerationConfig } from '../types';
@@ -28,6 +29,7 @@ interface SettingsViewProps {
   onClearLocalHistory: () => void;
   onShowToast?: (toast: Omit<ToastNotification, 'id'>) => void;
   onClose?: () => void;
+  onBack?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -38,8 +40,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onOpenSignOutModal,
   onClearLocalHistory,
   onShowToast,
-  onClose
+  onClose,
+  onBack
 }) => {
+  // Close or go back on Escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (onClose) onClose();
+        else if (onBack) onBack();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, onBack]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -65,10 +80,31 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <span>Security Rules Active</span>
             </span>
 
+            {onBack && (
+              <button
+                id="back-settings-view-btn"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onBack();
+                }}
+                className="p-2 rounded-xl bg-[#091228] hover:bg-[#152347] border border-[#1a2d5c] hover:border-cyan-400/50 text-slate-300 hover:text-[#00F0FF] transition-all cursor-pointer flex items-center gap-1.5 text-xs font-mono"
+                aria-label="Back to previous page"
+                title="Back to previous page (Esc)"
+              >
+                <ArrowLeft className="w-4 h-4 text-cyan-400" />
+                <span className="hidden sm:inline">Back</span>
+              </button>
+            )}
+
             {onClose && (
               <button
                 id="close-settings-view-btn"
-                onClick={onClose}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClose();
+                }}
                 className="p-2 rounded-xl bg-[#091228] hover:bg-[#152347] border border-[#1a2d5c] hover:border-cyan-400/50 text-slate-400 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 text-xs font-mono"
                 aria-label="Close Settings and return to Dashboard"
                 title="Close Settings (Esc)"

@@ -27,7 +27,12 @@ export interface JournalLocation {
   lat: number;
   lng: number;
   placeName: string;
+  formattedAddress?: string;
+  city?: string;
+  country?: string;
+  accuracy?: number;
   addedAt?: number;
+  isFallbackCoordinates?: boolean;
 }
 
 export interface JournalSession {
@@ -53,10 +58,12 @@ export interface LearningPlatform {
   name: string;
   role: string;
   focus: string;
-  status: 'In Progress' | 'Active' | 'Completed';
+  status: 'In Progress' | 'Active' | 'Completed' | 'Completed & Certified' | string;
   progressPercentage: number;
   badgeColor: string;
   link?: string;
+  certificateReceived?: boolean;
+  cohort?: string;
 }
 
 export interface CareerProgressData {

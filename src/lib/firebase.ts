@@ -190,49 +190,71 @@ export const DEFAULT_CAREER_PROGRESS: CareerProgressData = {
     {
       id: 'google-cloud',
       name: 'Google Cloud Gen AI Academy',
-      role: 'Cloud & Scalable AI',
-      focus: 'Vertex AI, Gemini models, Cloud Run containerization, and MLOps',
-      status: 'In Progress',
-      progressPercentage: 71,
-      badgeColor: '#a855f7'
+      role: 'APAC Edition Cohort 3 Graduate (Google Cloud & Hack2skill)',
+      focus: 'Conducted by Google Cloud & Hack2skill. Successfully completed 100% of APAC Edition Cohort 3 with official certificate. Participated in the Ideathon (project submitted, awaiting evaluation) and Meet the Builders program (project, blog post, and materials submitted, awaiting evaluation).',
+      status: 'Completed & Certified',
+      progressPercentage: 100,
+      badgeColor: '#10b981',
+      certificateReceived: true,
+      cohort: 'APAC Edition Cohort 3 (Google Cloud & Hack2skill)'
     },
     {
       id: 'codebasics',
       name: 'CodeBasics',
       role: 'Core Foundations & Math',
-      focus: 'Python data structures, linear algebra, calculus, and neural network math',
-      status: 'Active',
-      progressPercentage: 85,
+      focus: 'Python data structures, linear algebra, calculus, and neural network math (8% completed)',
+      status: 'In Progress',
+      progressPercentage: 8,
       badgeColor: '#10b981'
     },
     {
       id: 'codealpha',
-      name: 'CodeAlpha',
-      role: 'Hands-on Projects & Internships',
-      focus: 'Applied NLP architectures, computer vision prototypes, and production APIs',
-      status: 'Active',
-      progressPercentage: 80,
-      badgeColor: '#f43f5e'
+      name: 'CodeAlpha AI Internship',
+      role: 'AI Engineering Intern (Completed & Certified)',
+      focus: 'Successfully completed AI Internship program and received official internship certificate. Built production deep learning models, computer vision prototypes, and applied NLP pipelines.',
+      status: 'Completed & Certified',
+      progressPercentage: 100,
+      badgeColor: '#10b981',
+      certificateReceived: true,
+      cohort: 'AI Engineering Internship'
     },
     {
       id: 'ostad',
       name: 'Ostad',
       role: 'Structured AI/ML Curriculum',
-      focus: 'End-to-end Machine Learning pipelines, model deployment, and live mentor sessions',
+      focus: 'End-to-end Machine Learning pipelines, model deployment, and live mentor sessions (79.31% completed)',
       status: 'In Progress',
-      progressPercentage: 78,
+      progressPercentage: 79.31,
       badgeColor: '#00F0FF'
+    },
+    {
+      id: 'institute',
+      name: 'The Institute',
+      role: 'Advanced AI/ML Course',
+      focus: 'Recently started advanced AI/ML course curriculum at the Institute; completed foundational orientation and core modules (8% completed so far)',
+      status: 'In Progress',
+      progressPercentage: 8,
+      badgeColor: '#a855f7',
+      cohort: 'Active Cohort'
     }
   ],
   weeklyGoals: [
     'Master Self-Attention and Multi-Head Attention mechanics in PyTorch',
-    'Deploy a Gemini 3.7 Flash application with resilient server fallbacks',
+    'Advance foundational and applied coursework at The Institute (currently at 8% progress)',
+    'Prepare technical defense and architecture documentation for Ideathon & Meet the Builders evaluations',
     'Synthesize HR talent workflow analogies into AI pipeline architectures'
   ],
   achievements: [
+    'Updated CodeBasics course progress tracking (8% completed)',
+    'Advanced Ostad structured AI/ML curriculum progress to 79.31% completion',
+    'Recently started advanced AI/ML course at The Institute (8% completed so far)',
+    'Successfully completed AI Internship program & awarded official AI Internship Certificate',
+    'Successfully completed 100% of Google Cloud Gen AI Academy APAC Edition Cohort 3 (conducted by Google Cloud & Hack2skill) & awarded official certificate',
+    'Participated in the Google Cloud & Hack2skill Gen AI Academy Ideathon; project submitted and currently awaiting evaluation',
+    'Participated in the Meet the Builders program; project, blog post, and required materials submitted and currently awaiting evaluation',
     'Transitioned 14+ years of strategic HR leadership into technical problem-solving mastery',
-    'Configured multi-platform AI/ML curriculum across Ostad, CodeBasics, Google Cloud Gen AI Academy & CodeAlpha',
-    'Engineered custom AI/ML Career Command Center on Google Cloud'
+    'Configured multi-platform AI/ML curriculum across The Institute, Google Cloud Gen AI Academy, Ostad, CodeBasics & CodeAlpha',
+    'Engineered custom AI/ML Career Command Center on Google Cloud Run'
   ],
   updatedAt: Date.now()
 };
@@ -240,13 +262,63 @@ export const DEFAULT_CAREER_PROGRESS: CareerProgressData = {
 export const DEFAULT_SKILLS: Omit<SkillItem, 'userId'>[] = [
   { id: 'skill-python', skill: 'Python & Data Engineering', level: 90, category: 'Fundamentals', platform: 'CodeBasics', verified: true, updatedAt: Date.now() },
   { id: 'skill-math', skill: 'Linear Algebra & Statistics', level: 85, category: 'Theory', platform: 'CodeBasics', verified: true, updatedAt: Date.now() },
+  { id: 'skill-codebasics', skill: 'CodeBasics Foundations & ML Math', level: 8, category: 'Curriculum', platform: 'CodeBasics', verified: false, updatedAt: Date.now() },
   { id: 'skill-pytorch', skill: 'Deep Learning & PyTorch', level: 82, category: 'Core ML', platform: 'Ostad', verified: true, updatedAt: Date.now() },
-  { id: 'skill-transformers', skill: 'Transformers & Scaled Attention', level: 78, category: 'Gen AI', platform: 'Ostad / Research', verified: true, updatedAt: Date.now() },
-  { id: 'skill-gcp', skill: 'Google Cloud Vertex AI & Run', level: 75, category: 'Cloud Engineering', platform: 'Google Cloud Gen AI Academy', verified: true, updatedAt: Date.now() },
-  { id: 'skill-portfolio', skill: 'Production AI Portfolio', level: 70, category: 'Projects', platform: 'CodeAlpha', verified: true, updatedAt: Date.now() }
+  { id: 'skill-transformers', skill: 'Transformers & Scaled Attention', level: 79.31, category: 'Gen AI', platform: 'Ostad / Research', verified: true, updatedAt: Date.now() },
+  { id: 'skill-gcp', skill: 'Google Cloud Vertex AI & Run', level: 100, category: 'Cloud Engineering', platform: 'Google Cloud Gen AI Academy (APAC Cohort 3 Certified)', verified: true, updatedAt: Date.now() },
+  { id: 'skill-portfolio', skill: 'Production AI Portfolio & Applied Systems', level: 100, category: 'Projects', platform: 'CodeAlpha AI Internship (Certified)', verified: true, updatedAt: Date.now() },
+  { id: 'skill-institute', skill: 'Advanced AI/ML Specialization', level: 8, category: 'Curriculum', platform: 'The Institute', verified: false, updatedAt: Date.now() }
 ];
 
 export const DEFAULT_PROJECTS: Omit<ProjectItem, 'userId'>[] = [
+  {
+    id: 'codealpha-ai-internship',
+    title: 'CodeAlpha AI Internship Capstone & Applied Prototypes',
+    role: 'AI Engineering Intern (Certified)',
+    status: 'Completed & Certified',
+    statusColor: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
+    description: 'Practical applied AI engineering projects completed during the AI Internship. Built real-world deep learning pipelines, computer vision prototypes, applied NLP tokenizers, and containerized APIs, culminating in the award of the official internship certificate.',
+    stack: ['Python', 'PyTorch', 'Computer Vision (OpenCV)', 'NLP (Hugging Face)', 'FastAPI', 'Docker'],
+    achievements: [
+      'Successfully completed 100% of all milestone deliverables for the AI Internship program',
+      'Engineered production-grade computer vision and NLP deep learning workflows',
+      'Awarded official AI Internship Certificate of Completion'
+    ],
+    prompt: 'Help me articulate my accomplishments and system engineering from the CodeAlpha AI Internship on my resume and LinkedIn.',
+    updatedAt: Date.now()
+  },
+  {
+    id: 'gcp-ideathon-project',
+    title: 'Google Cloud & Hack2skill Gen AI Academy Ideathon Project',
+    role: 'Gen AI Rapid Innovation',
+    status: 'Awaiting Evaluation',
+    statusColor: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
+    description: 'Generative AI innovation project designed and submitted for official evaluation in the Google Cloud Gen AI Academy APAC Edition Cohort 3 Ideathon (conducted by Google Cloud & Hack2skill). Leverages Vertex AI and Gemini architectures for enterprise impact. Currently awaiting evaluation results.',
+    stack: ['Google Cloud', 'Hack2skill', 'Vertex AI', 'Gemini 3.6 Flash', 'Cloud Run', 'Python', 'System Architecture'],
+    achievements: [
+      'Participated in the competitive post-Academy Ideathon conducted by Google Cloud & Hack2skill',
+      'Engineered end-to-end Gen AI architecture and submitted comprehensive solution',
+      'Project submitted and currently awaiting official evaluation results from Google Cloud & Hack2skill'
+    ],
+    prompt: 'Help me prepare an executive pitch deck and technical defense for my Google Cloud & Hack2skill Ideathon project submission.',
+    updatedAt: Date.now()
+  },
+  {
+    id: 'meet-the-builders-project',
+    title: 'Meet the Builders Program Project & Materials',
+    role: 'Cloud-Native AI Architecture & Technical Writing',
+    status: 'Awaiting Evaluation',
+    statusColor: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10',
+    description: 'Comprehensive project build, technical blog post, and required evaluation materials engineered and submitted for the selective Meet the Builders program following the Google Cloud & Hack2skill Gen AI Academy. Demonstrates cloud-native deployment, containerized inference, and deep-dive technical communication. Currently awaiting evaluation results.',
+    stack: ['Google Cloud Run', 'Vertex AI', 'Secret Manager', 'Docker', 'Technical Writing', 'Gemini API'],
+    achievements: [
+      'Participated in the subsequent Meet the Builders program organized by Google Cloud & Hack2skill',
+      'Delivered production-grade containerized AI system and published accompanying technical blog post',
+      'Submitted full project, blog post, and all required deliverables; currently awaiting evaluation results'
+    ],
+    prompt: 'Review the system architecture, blog post writeup, and submission materials for my Meet the Builders project.',
+    updatedAt: Date.now()
+  },
   {
     id: 'ai-ml-journal',
     title: 'AI/ML Career Transition & Technical Journal',
@@ -574,6 +646,208 @@ export async function bootstrapUserData(userId: string): Promise<void> {
       for (const rec of DEFAULT_AI_RECOMMENDATIONS) {
         const recRef = doc(db, 'users', userId, 'aiRecommendations', rec.id);
         await setDoc(recRef, sanitizePayload({ ...rec, userId }));
+      }
+    } else {
+      // Synchronize existing profiles with latest cohort achievements & submissions
+      const existingData = profileSnap.data() as CareerProgressData;
+      let hasUpdates = false;
+
+      const currentPlatforms = existingData.learningPlatforms || [];
+      const updatedPlatforms = currentPlatforms.map((p) => {
+        if (p.id === 'google-cloud') {
+          const expectedFocus = 'Conducted by Google Cloud & Hack2skill. Successfully completed 100% of APAC Edition Cohort 3 with official certificate. Participated in the Ideathon (project submitted, awaiting evaluation) and Meet the Builders program (project, blog post, and materials submitted, awaiting evaluation).';
+          const expectedRole = 'APAC Edition Cohort 3 Graduate (Google Cloud & Hack2skill)';
+          if (p.focus !== expectedFocus || p.role !== expectedRole || p.progressPercentage < 100) {
+            hasUpdates = true;
+            return {
+              ...p,
+              name: 'Google Cloud Gen AI Academy',
+              role: expectedRole,
+              focus: expectedFocus,
+              status: 'Completed & Certified',
+              progressPercentage: 100,
+              badgeColor: '#10b981',
+              certificateReceived: true,
+              cohort: 'APAC Edition Cohort 3 (Google Cloud & Hack2skill)'
+            };
+          }
+        }
+        if (p.id === 'codealpha' && (p.progressPercentage < 100 || p.status !== 'Completed & Certified' || !p.certificateReceived)) {
+          hasUpdates = true;
+          return {
+            ...p,
+            name: 'CodeAlpha AI Internship',
+            role: 'AI Engineering Intern (Completed & Certified)',
+            focus: 'Successfully completed AI Internship program and received official internship certificate. Built production deep learning models, computer vision prototypes, and applied NLP pipelines.',
+            status: 'Completed & Certified',
+            progressPercentage: 100,
+            badgeColor: '#10b981',
+            certificateReceived: true,
+            cohort: 'AI Engineering Internship'
+          };
+        }
+        if (p.id === 'ostad' && p.progressPercentage !== 79.31) {
+          hasUpdates = true;
+          return {
+            ...p,
+            progressPercentage: 79.31,
+            focus: 'End-to-end Machine Learning pipelines, model deployment, and live mentor sessions (79.31% completed)'
+          };
+        }
+        if (p.id === 'codebasics' && p.progressPercentage !== 8) {
+          hasUpdates = true;
+          return {
+            ...p,
+            progressPercentage: 8,
+            status: 'In Progress',
+            focus: 'Python data structures, linear algebra, calculus, and neural network math (8% completed)'
+          };
+        }
+        return p;
+      });
+
+      // Ensure The Institute is present in learningPlatforms
+      if (!updatedPlatforms.some(p => p.id === 'institute' || p.id === 'the-institute')) {
+        hasUpdates = true;
+        updatedPlatforms.push({
+          id: 'institute',
+          name: 'The Institute',
+          role: 'Advanced AI/ML Course',
+          focus: 'Recently started advanced AI/ML course curriculum at the Institute; completed foundational orientation and core modules (8% completed so far)',
+          status: 'In Progress',
+          progressPercentage: 8,
+          badgeColor: '#a855f7',
+          cohort: 'Active Cohort'
+        });
+      }
+
+      const newAchievements = [
+        'Updated CodeBasics course progress tracking (8% completed)',
+        'Advanced Ostad structured AI/ML curriculum progress to 79.31% completion',
+        'Recently started advanced AI/ML course at The Institute (8% completed so far)',
+        'Successfully completed AI Internship program & awarded official AI Internship Certificate',
+        'Successfully completed 100% of Google Cloud Gen AI Academy APAC Edition Cohort 3 (conducted by Google Cloud & Hack2skill) & awarded official certificate',
+        'Participated in the Google Cloud & Hack2skill Gen AI Academy Ideathon; project submitted and currently awaiting evaluation',
+        'Participated in the Meet the Builders program; project, blog post, and required materials submitted and currently awaiting evaluation'
+      ];
+
+      const currentAchievements = existingData.achievements || [];
+      const mergedAchievements = [...currentAchievements];
+      for (const ach of newAchievements) {
+        if (!mergedAchievements.some(existing => existing.toLowerCase().includes(ach.slice(0, 25).toLowerCase()))) {
+          mergedAchievements.unshift(ach);
+          hasUpdates = true;
+        }
+      }
+
+      if (hasUpdates) {
+        await setDoc(profileRef, sanitizePayload({
+          learningPlatforms: updatedPlatforms,
+          achievements: mergedAchievements,
+          updatedAt: Date.now()
+        }), { merge: true });
+      }
+
+      // Ensure newly introduced or updated projects (Ideathon, Meet the Builders & AI Internship) are synced
+      for (const project of DEFAULT_PROJECTS) {
+        const projRef = doc(db, 'users', userId, 'projects', project.id);
+        const pSnap = await getDoc(projRef);
+        if (!pSnap.exists()) {
+          await setDoc(projRef, sanitizePayload({ ...project, userId }));
+        } else if (project.id === 'gcp-ideathon-project' || project.id === 'meet-the-builders-project') {
+          await setDoc(projRef, sanitizePayload({
+            title: project.title,
+            description: project.description,
+            achievements: project.achievements,
+            status: project.status,
+            stack: project.stack,
+            prompt: project.prompt,
+            role: project.role,
+            updatedAt: Date.now()
+          }), { merge: true });
+        }
+      }
+
+      // Ensure GCP skill is updated to 100% verified
+      const gcpSkillRef = doc(db, 'users', userId, 'skills', 'skill-gcp');
+      const gcpSkillSnap = await getDoc(gcpSkillRef);
+      if (gcpSkillSnap.exists()) {
+        const skillData = gcpSkillSnap.data();
+        if (skillData.level < 100) {
+          await setDoc(gcpSkillRef, sanitizePayload({
+            level: 100,
+            platform: 'Google Cloud Gen AI Academy (APAC Cohort 3 Certified)',
+            updatedAt: Date.now()
+          }), { merge: true });
+        }
+      }
+
+      // Ensure Portfolio / Internship skill is updated to 100% verified
+      const portfolioSkillRef = doc(db, 'users', userId, 'skills', 'skill-portfolio');
+      const portfolioSkillSnap = await getDoc(portfolioSkillRef);
+      if (portfolioSkillSnap.exists()) {
+        const skillData = portfolioSkillSnap.data();
+        if (skillData.level < 100) {
+          await setDoc(portfolioSkillRef, sanitizePayload({
+            level: 100,
+            skill: 'Production AI Portfolio & Applied Systems',
+            platform: 'CodeAlpha AI Internship (Certified)',
+            updatedAt: Date.now()
+          }), { merge: true });
+        }
+      }
+
+      // Ensure The Institute skill is present
+      const instituteSkillRef = doc(db, 'users', userId, 'skills', 'skill-institute');
+      const instituteSkillSnap = await getDoc(instituteSkillRef);
+      if (!instituteSkillSnap.exists()) {
+        await setDoc(instituteSkillRef, sanitizePayload({
+          id: 'skill-institute',
+          skill: 'Advanced AI/ML Specialization',
+          level: 8,
+          category: 'Curriculum',
+          platform: 'The Institute',
+          verified: false,
+          updatedAt: Date.now(),
+          userId
+        }));
+      }
+
+      // Ensure Transformers / Ostad skill is synced to 79.31%
+      const transformersSkillRef = doc(db, 'users', userId, 'skills', 'skill-transformers');
+      const transformersSkillSnap = await getDoc(transformersSkillRef);
+      if (transformersSkillSnap.exists()) {
+        const skillData = transformersSkillSnap.data();
+        if (skillData.level !== 79.31) {
+          await setDoc(transformersSkillRef, sanitizePayload({
+            level: 79.31,
+            updatedAt: Date.now()
+          }), { merge: true });
+        }
+      }
+
+      // Ensure CodeBasics skill is present and synced to 8%
+      const codebasicsSkillRef = doc(db, 'users', userId, 'skills', 'skill-codebasics');
+      const codebasicsSkillSnap = await getDoc(codebasicsSkillRef);
+      if (!codebasicsSkillSnap.exists()) {
+        await setDoc(codebasicsSkillRef, sanitizePayload({
+          id: 'skill-codebasics',
+          skill: 'CodeBasics Foundations & ML Math',
+          level: 8,
+          category: 'Curriculum',
+          platform: 'CodeBasics',
+          verified: false,
+          updatedAt: Date.now(),
+          userId
+        }));
+      } else {
+        const skillData = codebasicsSkillSnap.data();
+        if (skillData.level !== 8) {
+          await setDoc(codebasicsSkillRef, sanitizePayload({
+            level: 8,
+            updatedAt: Date.now()
+          }), { merge: true });
+        }
       }
     }
   } catch (error) {

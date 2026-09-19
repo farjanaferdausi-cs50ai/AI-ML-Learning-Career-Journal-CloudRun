@@ -13,7 +13,7 @@ import {
   AlertTriangle,
   Copy
 } from 'lucide-react';
-import { loadGoogleMaps, reverseGeocode, getMapsApiKey } from '../lib/googleMaps';
+import { loadGoogleMaps, reverseGeocode, reverseGeocodeDetailed, type ReverseGeocodeResult, getMapsApiKey } from '../lib/googleMaps';
 import type { JournalLocation } from '../types';
 
 interface LocationPickerModalProps {
@@ -29,13 +29,16 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
   onClose,
   onSelectLocation,
 }) => {
-  const [lat, setLat] = useState<number>(initialLocation?.lat ?? 37.7749);
-  const [lng, setLng] = useState<number>(initialLocation?.lng ?? -122.4194);
+  const [lat, setLat] = useState<number | null>(initialLocation?.lat ?? null);
+  const [lng, setLng] = useState<number | null>(initialLocation?.lng ?? null);
+  const [accuracy, setAccuracy] = useState<number | null>(initialLocation?.accuracy ?? null);
   const [placeName, setPlaceName] = useState<string>(initialLocation?.placeName ?? '');
+  const [latestDetails, setLatestDetails] = useState<ReverseGeocodeResult | null>(null);
   const [isLoadingMap, setIsLoadingMap] = useState<boolean>(true);
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
+  const [geoErrorType, setGeoErrorType] = useState<'denied' | 'unavailable' | 'timeout' | 'generic' | null>(null);
   const [hasApiKey, setHasApiKey] = useState<boolean>(true);
   const [isReferrerRestricted, setIsReferrerRestricted] = useState<boolean>(false);
   const [siteUrl, setSiteUrl] = useState<string>('');
@@ -43,9 +46,10 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const autocompleteContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markerRef = useRef<google.maps.Marker | null>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
+  const autocompleteElementRef = useRef<google.maps.places.PlaceAutocompleteElement | null>(null);
 
   // Listen for Google Maps referrer or authentication failure
   useEffect(() => {
@@ -70,10 +74,11 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
   // Sync initial state whenever modal opens and listen for Escape key
   useEffect(() => {
     if (isOpen) {
-      setLat(initialLocation?.lat ?? 37.7749);
-      setLng(initialLocation?.lng ?? -122.4194);
+      setLat(initialLocation?.lat ?? null);
+      setLng(initialLocation?.lng ?? null);
       setPlaceName(initialLocation?.placeName ?? '');
       setGeoError(null);
+      setGeoErrorType(null);
       setMapError(null);
 
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -115,15 +120,15 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
         const google = await loadGoogleMaps();
         if (!isMounted || !mapContainerRef.current) return;
 
-        const currentPos = {
-          lat: initialLocation?.lat ?? 37.7749,
-          lng: initialLocation?.lng ?? -122.4194,
-        };
+        const currentPos = (initialLocation?.lat != null && initialLocation?.lng != null)
+          ? { lat: initialLocation.lat, lng: initialLocation.lng }
+          : null;
 
         // Create Map
         const map = new google.maps.Map(mapContainerRef.current, {
-          center: currentPos,
-          zoom: initialLocation ? 14 : 11,
+          center: currentPos || { lat: 20, lng: 0 },
+          zoom: currentPos ? 14 : 2,
+          mapId: 'DEMO_MAP_ID',
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
@@ -176,12 +181,11 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
         mapInstanceRef.current = map;
 
-        // Create Pin Marker
-        const marker = new google.maps.Marker({
-          position: currentPos,
-          map,
-          draggable: true,
-          animation: google.maps.Animation.DROP,
+        // Create Advanced Marker (hidden until location is set)
+        const marker = new google.maps.marker.AdvancedMarkerElement({
+          position: currentPos || null,
+          map: currentPos ? map : null,
+          gmpDraggable: true,
           title: 'Selected Study Location',
         });
 
@@ -189,57 +193,93 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
         // Update coordinates on marker drag
         marker.addListener('dragend', async () => {
-          const pos = marker.getPosition();
+          const pos = marker.position;
           if (pos) {
-            const newLat = pos.lat();
-            const newLng = pos.lng();
-            setLat(newLat);
-            setLng(newLng);
-            const address = await reverseGeocode(newLat, newLng);
-            if (isMounted) setPlaceName(address);
+            const newLat = typeof (pos as any).lat === 'function' ? (pos as any).lat() : (pos as any).lat;
+            const newLng = typeof (pos as any).lng === 'function' ? (pos as any).lng() : (pos as any).lng;
+            if (typeof newLat === 'number' && typeof newLng === 'number') {
+              setLat(newLat);
+              setLng(newLng);
+              try {
+                const details = await reverseGeocodeDetailed(newLat, newLng);
+                if (isMounted) {
+                  setLatestDetails(details);
+                  setPlaceName(details.placeName || `${newLat.toFixed(4)}°, ${newLng.toFixed(4)}°`);
+                }
+              } catch {
+                if (isMounted) setPlaceName(`${newLat.toFixed(4)}°, ${newLng.toFixed(4)}°`);
+              }
+            }
           }
         });
 
-        // Click on map to drop pin
+        // Click on map to drop or reposition pin
         map.addListener('click', async (e: google.maps.MapMouseEvent) => {
           if (e.latLng) {
             const newLat = e.latLng.lat();
             const newLng = e.latLng.lng();
-            marker.setPosition(e.latLng);
+            marker.position = { lat: newLat, lng: newLng };
+            marker.map = map;
             setLat(newLat);
             setLng(newLng);
-            const address = await reverseGeocode(newLat, newLng);
-            if (isMounted) setPlaceName(address);
+            try {
+              const details = await reverseGeocodeDetailed(newLat, newLng);
+              if (isMounted) {
+                setLatestDetails(details);
+                setPlaceName(details.placeName || `${newLat.toFixed(4)}°, ${newLng.toFixed(4)}°`);
+              }
+            } catch {
+              if (isMounted) setPlaceName(`${newLat.toFixed(4)}°, ${newLng.toFixed(4)}°`);
+            }
           }
         });
 
-        // Setup Places Autocomplete
-        if (searchInputRef.current && google.maps.places) {
-          const autocomplete = new google.maps.places.Autocomplete(searchInputRef.current, {
-            fields: ['geometry', 'name', 'formatted_address'],
-          });
+        // Setup Places Autocomplete using modern PlaceAutocompleteElement
+        if (autocompleteContainerRef.current && google.maps.places?.PlaceAutocompleteElement) {
+          autocompleteContainerRef.current.innerHTML = '';
+          const placeAutocomplete = new google.maps.places.PlaceAutocompleteElement();
+          placeAutocomplete.setAttribute('placeholder', 'Search place, city, or campus...');
+          placeAutocomplete.style.width = '100%';
+          placeAutocomplete.style.colorScheme = 'dark';
+          autocompleteContainerRef.current.appendChild(placeAutocomplete);
+          autocompleteElementRef.current = placeAutocomplete;
 
-          autocomplete.bindTo('bounds', map);
-          autocompleteRef.current = autocomplete;
+          const handlePlaceSelect = async (event: any) => {
+            try {
+              const prediction = event.placePrediction;
+              const place = prediction ? prediction.toPlace() : (event.place || null);
+              if (!place) return;
 
-          autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace();
-            if (!place.geometry || !place.geometry.location) {
-              return;
+              if (typeof place.fetchFields === 'function') {
+                await place.fetchFields({
+                  fields: ['displayName', 'formattedAddress', 'location'],
+                });
+              }
+
+              const loc = place.location;
+              if (loc) {
+                const newLat = typeof loc.lat === 'function' ? loc.lat() : loc.lat;
+                const newLng = typeof loc.lng === 'function' ? loc.lng() : loc.lng;
+                const chosenName = place.displayName || place.formattedAddress || `${newLat.toFixed(4)}, ${newLng.toFixed(4)}`;
+
+                map.setCenter({ lat: newLat, lng: newLng });
+                map.setZoom(15);
+                if (markerRef.current) {
+                  markerRef.current.position = { lat: newLat, lng: newLng };
+                  markerRef.current.map = map;
+                }
+
+                setLat(newLat);
+                setLng(newLng);
+                setPlaceName(chosenName);
+              }
+            } catch (err) {
+              console.warn('Error resolving place selection:', err);
             }
+          };
 
-            const newLat = place.geometry.location.lat();
-            const newLng = place.geometry.location.lng();
-            const chosenName = place.name || place.formatted_address || `${newLat.toFixed(4)}, ${newLng.toFixed(4)}`;
-
-            map.setCenter(place.geometry.location);
-            map.setZoom(15);
-            marker.setPosition(place.geometry.location);
-
-            setLat(newLat);
-            setLng(newLng);
-            setPlaceName(chosenName);
-          });
+          placeAutocomplete.addEventListener('gmp-select', handlePlaceSelect);
+          placeAutocomplete.addEventListener('gmp-placeselect', handlePlaceSelect);
         }
 
         setIsLoadingMap(false);
@@ -258,64 +298,104 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
     };
   }, [isOpen]);
 
-  // Handle "Use Current Location" (Browser Geolocation)
+  // Handle "Use Current Location" (Browser Geolocation) with high accuracy and distinct error states
   const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setGeoError('Geolocation is not supported by your browser.');
+    if (typeof window === 'undefined' || !navigator || !navigator.geolocation) {
+      setGeoErrorType('generic');
+      setGeoError('Geolocation is not supported by your browser or device.');
       return;
     }
 
     setIsLocating(true);
     setGeoError(null);
+    setGeoErrorType(null);
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const curLat = pos.coords.latitude;
         const curLng = pos.coords.longitude;
+        const curAccuracy = typeof pos.coords.accuracy === 'number' ? pos.coords.accuracy : null;
         setLat(curLat);
         setLng(curLng);
+        setAccuracy(curAccuracy);
 
         if (mapInstanceRef.current && markerRef.current) {
           const latLng = { lat: curLat, lng: curLng };
           mapInstanceRef.current.setCenter(latLng);
           mapInstanceRef.current.setZoom(15);
-          markerRef.current.setPosition(latLng);
+          markerRef.current.position = latLng;
+          markerRef.current.map = mapInstanceRef.current;
         }
 
-        const address = await reverseGeocode(curLat, curLng);
-        setPlaceName(address || 'Current Location');
+        try {
+          const details = await reverseGeocodeDetailed(curLat, curLng);
+          setLatestDetails(details);
+          setPlaceName(details.placeName || `${curLat.toFixed(4)}°, ${curLng.toFixed(4)}°`);
+        } catch {
+          setPlaceName(`${curLat.toFixed(4)}°, ${curLng.toFixed(4)}°`);
+        }
         setIsLocating(false);
       },
       (err) => {
         setIsLocating(false);
-        if (err.code === 1) {
-          setGeoError('Location permission was denied. You can search by name or click the map.');
+        if (err.code === 1 || err.code === (err as any).PERMISSION_DENIED) {
+          setGeoErrorType('denied');
+          setGeoError('Location permission denied. Please allow location access in your browser or device settings, or search manually.');
+        } else if (err.code === 2 || err.code === (err as any).POSITION_UNAVAILABLE) {
+          setGeoErrorType('unavailable');
+          setGeoError('Position unavailable: Device could not determine its location. Please check GPS or network connectivity.');
+        } else if (err.code === 3 || err.code === (err as any).TIMEOUT) {
+          setGeoErrorType('timeout');
+          setGeoError('Location request timed out after 10 seconds. Device GPS took too long to respond.');
         } else {
-          setGeoError('Could not determine current location. Please search or pick on map.');
+          setGeoErrorType('generic');
+          setGeoError(err.message || 'Could not determine current location. Please search or pick on map.');
         }
       },
-      { timeout: 10000, enableHighAccuracy: true }
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
     );
   };
 
   const handleConfirm = () => {
-    if (!placeName && !lat && !lng) {
+    if (!placeName.trim() && (lat === null || lng === null)) {
       onSelectLocation(null);
       onClose();
       return;
     }
 
-    const finalName = placeName.trim() || `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`;
-    onSelectLocation({
-      lat,
-      lng,
-      placeName: finalName,
-      addedAt: Date.now(),
-    });
+    if (lat !== null && lng !== null) {
+      const finalName = placeName.trim() || `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`;
+      onSelectLocation({
+        lat,
+        lng,
+        accuracy: accuracy ?? undefined,
+        placeName: finalName,
+        formattedAddress: latestDetails?.formattedAddress || finalName,
+        city: latestDetails?.city,
+        country: latestDetails?.country,
+        isFallbackCoordinates: latestDetails?.isFallbackCoordinates,
+        addedAt: Date.now(),
+      });
+    } else if (placeName.trim()) {
+      onSelectLocation({
+        lat: 0,
+        lng: 0,
+        placeName: placeName.trim(),
+        addedAt: Date.now(),
+      });
+    }
     onClose();
   };
 
   const handleRemove = () => {
+    if (markerRef.current) {
+      markerRef.current.map = null;
+      markerRef.current.position = null;
+    }
     onSelectLocation(null);
     onClose();
   };
@@ -352,7 +432,11 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
           </div>
 
           <button
-            onClick={onClose}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
             aria-label="Close location picker"
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors cursor-pointer"
           >
@@ -365,17 +449,25 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
           
           {/* Search Bar & Geolocation Bar */}
           <div className="flex flex-col sm:flex-row gap-2">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search place, city, or campus..."
-                value={placeName}
-                onChange={(e) => setPlaceName(e.target.value)}
-                aria-label="Search place name or address"
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#050b18] border border-[#182a52] text-white text-xs font-mono placeholder-slate-500 focus:outline-none focus:border-[#00F0FF]"
+            <div className="relative flex-1 min-w-0">
+              <div 
+                ref={autocompleteContainerRef} 
+                className={`w-full min-h-[38px] ${hasApiKey && !mapError ? 'block' : 'hidden'}`}
               />
+              {(!hasApiKey || mapError) && (
+                <div className="relative w-full">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search place, city, or campus..."
+                    value={placeName}
+                    onChange={(e) => setPlaceName(e.target.value)}
+                    aria-label="Search place name or address"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#050b18] border border-[#182a52] text-white text-xs font-mono placeholder-slate-500 focus:outline-none focus:border-[#00F0FF]"
+                  />
+                </div>
+              )}
             </div>
 
             <button
@@ -400,9 +492,21 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
           {/* Geo Error Alert */}
           {geoError && (
-            <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-400" />
-              <span>{geoError}</span>
+            <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-400" />
+                <span>{geoError}</span>
+              </div>
+              {(geoErrorType === 'timeout' || geoErrorType === 'unavailable') && (
+                <button
+                  type="button"
+                  onClick={handleUseCurrentLocation}
+                  disabled={isLocating}
+                  className="px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-[10px] font-mono whitespace-nowrap cursor-pointer transition-colors"
+                >
+                  Retry
+                </button>
+              )}
             </div>
           )}
 
@@ -451,15 +555,23 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
                 <div className="mt-2 pt-2 border-t border-[#142347]">
                   <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pb-1">
                     <span>Fallback Map Preview:</span>
-                    <span className="text-cyan-300">{lat.toFixed(4)}°, {lng.toFixed(4)}°</span>
+                    <span className="text-cyan-300">
+                      {lat !== null && lng !== null ? `${lat.toFixed(4)}°, ${lng.toFixed(4)}°` : 'None'}
+                    </span>
                   </div>
-                  <div className="w-full h-24 rounded-lg overflow-hidden border border-[#182a52] relative bg-slate-900">
-                    <iframe
-                      title="Location Preview"
-                      className="w-full h-full border-0 pointer-events-none opacity-85"
-                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.01}%2C${lat - 0.01}%2C${lng + 0.01}%2C${lat + 0.01}&layer=mapnik&marker=${lat}%2C${lng}`}
-                    />
-                  </div>
+                  {lat !== null && lng !== null ? (
+                    <div className="w-full h-24 rounded-lg overflow-hidden border border-[#182a52] relative bg-slate-900">
+                      <iframe
+                        title="Location Preview"
+                        className="w-full h-full border-0 pointer-events-none opacity-85"
+                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.01}%2C${lat - 0.01}%2C${lng + 0.01}%2C${lat + 0.01}&layer=mapnik&marker=${lat}%2C${lng}`}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full py-3 rounded-lg border border-[#182a52] bg-slate-900/60 text-center text-[10px] text-slate-400 font-mono">
+                      No coordinates selected
+                    </div>
+                  )}
                 </div>
               </div>
             ) : mapError ? (
@@ -467,7 +579,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
                 <Info className="w-6 h-6 text-cyan-400" />
                 <p className="text-xs text-slate-300 max-w-md">{mapError}</p>
                 <div className="text-[11px] font-mono text-slate-400 pt-1">
-                  Selected coordinates: <span className="text-cyan-300">{lat.toFixed(4)}°, {lng.toFixed(4)}°</span>
+                  Selected coordinates: <span className="text-cyan-300">{lat !== null && lng !== null ? `${lat.toFixed(4)}°, ${lng.toFixed(4)}°` : 'None'}</span>
                 </div>
               </div>
             ) : null}
@@ -480,7 +592,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
           <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
             <span>💡 Click anywhere on the map or drag the pin to adjust</span>
             <span className="text-cyan-300">
-              {lat ? `${lat.toFixed(4)}°, ${lng.toFixed(4)}°` : 'No coords'}
+              {lat !== null && lng !== null ? `${lat.toFixed(4)}°, ${lng.toFixed(4)}°` : 'No coords'}
             </span>
           </div>
 
@@ -521,7 +633,11 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
           <div className="flex items-center gap-2">
             <button
-              onClick={onClose}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose();
+              }}
               className="px-3.5 py-2 rounded-xl bg-[#091533] hover:bg-[#0f2452] text-slate-300 text-xs font-mono border border-[#1a2e5c] transition-colors cursor-pointer"
             >
               Cancel

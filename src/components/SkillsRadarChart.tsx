@@ -19,7 +19,7 @@ export const DEFAULT_SKILLS: SkillDataPoint[] = [
   { skill: 'Mathematics', value: 50, fullMark: 100 },
 ];
 
-export const SkillsRadarChart: React.FC<SkillsRadarChartProps> = ({
+const SkillsRadarChartComponent: React.FC<SkillsRadarChartProps> = ({
   data = DEFAULT_SKILLS,
   size = 190
 }) => {
@@ -263,6 +263,8 @@ export const SkillsRadarChart: React.FC<SkillsRadarChartProps> = ({
     </div>
   );
 };
+
+export const SkillsRadarChart = React.memo(SkillsRadarChartComponent);
 
 // Also export alias for compatibility
 export const SkillsBarLineChart = SkillsRadarChart;

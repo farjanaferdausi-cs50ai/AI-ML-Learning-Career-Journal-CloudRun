@@ -12,7 +12,7 @@ interface DashboardViewProps {
   sessions?: JournalSession[];
 }
 
-export const DashboardView: React.FC<DashboardViewProps> = ({
+const DashboardViewComponent: React.FC<DashboardViewProps> = ({
   onContinueLearning,
   onWatchOverview,
   onNavigateTab,
@@ -49,3 +49,5 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     </div>
   );
 };
+
+export const DashboardView = React.memo(DashboardViewComponent);

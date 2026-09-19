@@ -40,7 +40,7 @@ interface DashboardCenterContentProps {
   sessions?: JournalSession[];
 }
 
-export const DashboardCenterContent: React.FC<DashboardCenterContentProps> = ({
+const DashboardCenterContentComponent: React.FC<DashboardCenterContentProps> = ({
   onContinueLearning,
   onWatchOverview,
   onNavigateTab,
@@ -1019,3 +1019,5 @@ export const DashboardCenterContent: React.FC<DashboardCenterContentProps> = ({
     </div>
   );
 };
+
+export const DashboardCenterContent = React.memo(DashboardCenterContentComponent);

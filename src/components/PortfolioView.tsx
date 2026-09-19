@@ -11,7 +11,8 @@ import {
   ArrowUpRight,
   Database,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Award
 } from 'lucide-react';
 import { DashboardCardsSkeleton } from './common/LoadingState';
 import { EmptyState } from './common/EmptyState';
@@ -26,6 +27,57 @@ interface PortfolioViewProps {
 }
 
 const DEFAULT_PROJECTS: ProjectItem[] = [
+  {
+    id: 'codealpha-ai-internship',
+    userId: 'default',
+    title: 'CodeAlpha AI Internship Capstone & Applied Prototypes',
+    role: 'AI Engineering Intern (Certified)',
+    status: 'Completed & Certified',
+    statusColor: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
+    description: 'Practical applied AI engineering projects completed during the AI Internship. Built real-world deep learning pipelines, computer vision prototypes, applied NLP tokenizers, and containerized APIs, culminating in the award of the official internship certificate.',
+    stack: ['Python', 'PyTorch', 'Computer Vision (OpenCV)', 'NLP (Hugging Face)', 'FastAPI', 'Docker'],
+    achievements: [
+      'Successfully completed 100% of all milestone deliverables for the AI Internship program',
+      'Engineered production-grade computer vision and NLP deep learning workflows',
+      'Awarded official AI Internship Certificate of Completion'
+    ],
+    prompt: 'Help me articulate my accomplishments and system engineering from the CodeAlpha AI Internship on my resume and LinkedIn.',
+    updatedAt: Date.now()
+  },
+  {
+    id: 'gcp-ideathon-project',
+    userId: 'default',
+    title: 'Google Cloud Gen AI Academy Ideathon Project',
+    role: 'Gen AI Rapid Innovation',
+    status: 'Under Evaluation',
+    statusColor: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
+    description: 'Innovative Generative AI solution designed and submitted for official evaluation in the post-Academy Ideathon following 100% completion of APAC Edition Cohort 3. Leverages Vertex AI and Gemini architectures for enterprise impact.',
+    stack: ['Google Cloud', 'Vertex AI', 'Gemini 3.6 Flash', 'Cloud Run', 'Python', 'Architecture Design'],
+    achievements: [
+      'Competed in the post-Academy APAC Ideathon following 100% graduation and certification',
+      'Engineered end-to-end Gen AI architecture and submitted full technical dossier for official evaluation',
+      'Project currently undergoing formal evaluation by Google Cloud evaluators'
+    ],
+    prompt: 'Help me prepare an executive pitch deck and technical deep-dive defense for my Google Cloud Gen AI Academy Ideathon submission.',
+    updatedAt: Date.now()
+  },
+  {
+    id: 'meet-the-builders-project',
+    userId: 'default',
+    title: 'Meet the Builders Program Project',
+    role: 'Cloud-Native AI Architecture',
+    status: 'Under Evaluation',
+    statusColor: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10',
+    description: 'Advanced technical build engineered and submitted for the selective Google Cloud Meet the Builders program following the Gen AI Academy. Demonstrates hands-on cloud-native deployment, containerized inference, and enterprise AI engineering.',
+    stack: ['Google Cloud Run', 'Vertex AI', 'Secret Manager', 'Docker', 'FastAPI', 'Gemini API'],
+    achievements: [
+      'Selected for and participated in the intensive Google Cloud Meet the Builders initiative',
+      'Delivered production-grade AI system with containerized deployment architecture',
+      'Submitted comprehensive project dossier; currently under official evaluation'
+    ],
+    prompt: 'Review the system architecture and containerized inference pipeline for my Meet the Builders project submission.',
+    updatedAt: Date.now()
+  },
   {
     id: 'ai-ml-journal',
     userId: 'default',
@@ -138,10 +190,18 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <span className="px-3 py-1 rounded-xl bg-[#091228] border border-[#1a2d5c] text-xs font-mono text-cyan-300 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-[#00F0FF]" />
-              <span>4 Production Assets</span>
+              <span>{projects.length} Applied Projects</span>
+            </span>
+            <span className="px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-mono text-emerald-300 flex items-center gap-1.5">
+              <Award className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Internship Certified</span>
+            </span>
+            <span className="px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-mono text-amber-300 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span>2 Under Evaluation</span>
             </span>
           </div>
         </div>

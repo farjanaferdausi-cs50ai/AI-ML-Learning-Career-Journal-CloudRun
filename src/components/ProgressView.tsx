@@ -32,10 +32,12 @@ interface ProgressViewProps {
 const DEFAULT_SKILL_MATRIX = [
   { id: 'skill-python', skill: 'Python & Data Engineering', level: 90, category: 'Fundamentals', platform: 'CodeBasics' },
   { id: 'skill-math', skill: 'Linear Algebra & Statistics', level: 85, category: 'Theory', platform: 'CodeBasics' },
+  { id: 'skill-codebasics', skill: 'CodeBasics Foundations & ML Math', level: 8, category: 'Curriculum', platform: 'CodeBasics' },
   { id: 'skill-pytorch', skill: 'Deep Learning & PyTorch', level: 82, category: 'Core ML', platform: 'Ostad' },
-  { id: 'skill-transformers', skill: 'Transformers & Scaled Attention', level: 78, category: 'Gen AI', platform: 'Ostad / Research' },
-  { id: 'skill-gcp', skill: 'Google Cloud Vertex AI & Run', level: 75, category: 'Cloud Engineering', platform: 'Google Cloud Gen AI Academy' },
-  { id: 'skill-portfolio', skill: 'Production AI Portfolio', level: 70, category: 'Projects', platform: 'CodeAlpha' }
+  { id: 'skill-transformers', skill: 'Transformers & Scaled Attention', level: 79.31, category: 'Gen AI', platform: 'Ostad / Research' },
+  { id: 'skill-gcp', skill: 'Google Cloud Vertex AI & Run', level: 100, category: 'Cloud Engineering', platform: 'Google Cloud Gen AI Academy (APAC Cohort 3 Certified)' },
+  { id: 'skill-portfolio', skill: 'Production AI Portfolio & Applied Systems', level: 100, category: 'Projects', platform: 'CodeAlpha AI Internship (Certified)' },
+  { id: 'skill-institute', skill: 'Advanced AI/ML Course Specialization', level: 8, category: 'Curriculum', platform: 'The Institute' }
 ];
 
 const ProgressViewComponent: React.FC<ProgressViewProps> = ({

@@ -40,8 +40,13 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
             <LogOut className="w-5 h-5" />
           </div>
           <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            aria-label="Close sign out modal"
           >
             <X className="w-4 h-4" />
           </button>
@@ -56,7 +61,11 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
 
         <div className="flex items-center justify-end gap-2.5">
           <button
-            onClick={onClose}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
             disabled={isSigningOut}
             className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-medium transition-colors cursor-pointer"
           >

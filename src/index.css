@@ -73,6 +73,19 @@
   }
 }
 
+/* Google Maps Modern Place Autocomplete Web Component Styling */
+gmp-place-autocomplete {
+  width: 100%;
+  display: block;
+  color-scheme: dark;
+  --gmpx-color-surface: #050b18;
+  --gmpx-color-on-surface: #F1F5F9;
+  --gmpx-color-primary: #00F0FF;
+  --gmpx-font-family-base: 'JetBrains Mono', monospace;
+  --gmpx-font-size-base: 0.75rem;
+  border-radius: 0.75rem;
+}
+
 /* AI Coach Markdown Styling for High Contrast Dark Mode */
 .markdown-content h1,
 .markdown-content h2,

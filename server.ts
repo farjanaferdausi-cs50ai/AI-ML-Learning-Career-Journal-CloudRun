@@ -1078,6 +1078,149 @@ app.get('/api/maps/config', (req: Request, res: Response) => {
   });
 });
 
+// GET /api/maps/reverse-geocode — Reverse geocode coordinates using Google Maps Geocoding API
+app.get('/api/maps/reverse-geocode', async (req: Request, res: Response) => {
+  try {
+    const latStr = req.query.lat as string;
+    const lngStr = req.query.lng as string;
+
+    const lat = parseFloat(latStr);
+    const lng = parseFloat(lngStr);
+
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid coordinates provided'
+      });
+    }
+
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY || '';
+    let formattedAddress = '';
+    let country = '';
+    let city = '';
+    let geocodingApiDenied = false;
+
+    // 1. Attempt Google Maps Geocoding API if key is available
+    if (apiKey) {
+      try {
+        const gUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&language=en&key=${encodeURIComponent(apiKey)}`;
+        const gRes = await fetch(gUrl);
+        if (gRes.ok) {
+          const gData = await gRes.json() as any;
+          if (gData?.status === 'OK' && Array.isArray(gData.results) && gData.results.length > 0) {
+            const firstResult = gData.results[0];
+            formattedAddress = typeof firstResult.formatted_address === 'string' ? firstResult.formatted_address : '';
+
+            if (Array.isArray(firstResult.address_components)) {
+              for (const comp of firstResult.address_components) {
+                const types = Array.isArray(comp.types) ? comp.types : [];
+                if (types.includes('country') && comp.long_name) {
+                  country = comp.long_name;
+                }
+                if ((types.includes('locality') || types.includes('postal_town')) && comp.long_name && !city) {
+                  city = comp.long_name;
+                } else if (types.includes('administrative_area_level_2') && comp.long_name && !city) {
+                  city = comp.long_name;
+                }
+              }
+            }
+          } else if (gData?.status === 'REQUEST_DENIED') {
+            geocodingApiDenied = true;
+            console.warn('[Google Geocoding API] Status: REQUEST_DENIED. Geocoding API may need to be enabled in Google Cloud Console.');
+          } else {
+            console.warn('[Google Geocoding API] Status:', gData?.status, gData?.error_message || '');
+          }
+        }
+      } catch (gErr) {
+        console.warn('[Google Geocoding API] Request exception:', gErr);
+      }
+    }
+
+    // If Google Geocoding successfully resolved an address
+    if (formattedAddress) {
+      return res.json({
+        success: true,
+        data: {
+          placeName: formattedAddress,
+          formattedAddress,
+          country,
+          city,
+          lat,
+          lng,
+          isFallbackCoordinates: false,
+          source: 'google_maps',
+          geocodingApiNotEnabled: false
+        }
+      });
+    }
+
+    // 2. Resilient Fallback: Reverse geocode with English labels
+    try {
+      const osmRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1&accept-language=en`, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'FarjanaCareerJournal/1.0 (AI/ML Career Transition Journal)'
+        }
+      });
+      if (osmRes.ok) {
+        const osmData = await osmRes.json() as any;
+        if (osmData && (osmData.display_name || osmData.address)) {
+          const osmCountry = osmData.address?.country || '';
+          const osmCity = osmData.address?.city || osmData.address?.town || osmData.address?.suburb || osmData.address?.county || '';
+          const fullOsm = typeof osmData.display_name === 'string' ? osmData.display_name : '';
+          const parts = fullOsm.split(', ');
+          
+          let readableName = fullOsm;
+          if (parts.length > 3) {
+            readableName = parts.slice(0, 3).join(', ');
+          }
+          if (osmCountry && !readableName.includes(osmCountry)) {
+            readableName = `${readableName}, ${osmCountry}`;
+          }
+
+          return res.json({
+            success: true,
+            data: {
+              placeName: readableName || fullOsm,
+              formattedAddress: fullOsm,
+              country: osmCountry,
+              city: osmCity,
+              lat,
+              lng,
+              isFallbackCoordinates: false,
+              source: 'osm_fallback',
+              geocodingApiNotEnabled: geocodingApiDenied
+            }
+          });
+        }
+      }
+    } catch (osmErr) {
+      console.warn('[Reverse Geocode Fallback] Osm exception:', osmErr);
+    }
+
+    // 3. Final Fallback: Coordinates representation
+    return res.json({
+      success: true,
+      data: {
+        placeName: `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`,
+        formattedAddress: '',
+        country: '',
+        city: '',
+        lat,
+        lng,
+        isFallbackCoordinates: true,
+        geocodingApiNotEnabled: geocodingApiDenied
+      }
+    });
+  } catch (err: any) {
+    console.error('Reverse geocode route error:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to reverse geocode'
+    });
+  }
+});
+
 // GET /api/topics — List all study topics
 app.get('/api/topics', (req: Request, res: Response) => {
   return res.json({
@@ -1575,8 +1718,22 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    // Cache hashed assets for 1 year with immutable flag
+    app.use('/assets', express.static(path.join(distPath, 'assets'), {
+      maxAge: '1y',
+      immutable: true,
+    }));
+    // Cache other static assets (images, icons, etc.) with sensible cache revalidation
+    app.use(express.static(distPath, {
+      maxAge: '1d',
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        }
+      }
+    }));
     app.get('*', (req: Request, res: Response) => {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

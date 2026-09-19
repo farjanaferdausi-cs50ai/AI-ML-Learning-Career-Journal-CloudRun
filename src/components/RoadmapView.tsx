@@ -59,8 +59,9 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
       status: 'In Progress',
       statusColor: 'text-[#00F0FF] border-[#00F0FF]/30 bg-[#00F0FF]/10',
       progress: 85,
-      description: 'Deep neural networks from scratch, backpropagation calculus, PyTorch tensor manipulation, autograd, and GPU optimization via Ostad.',
+      description: 'Deep neural networks from scratch, backpropagation calculus, PyTorch tensor manipulation, autograd, and GPU optimization via Ostad and The Institute.',
       milestones: [
+        'Enrolled in Advanced AI/ML curriculum at The Institute (8% completed so far)',
         'Custom torch.nn.Module layers and forward/backward passes',
         'Optimizers: SGD with momentum, RMSprop, and AdamW weight decay',
         'Convolutional Networks (CNNs) & Residual Networks (ResNet)',
@@ -86,32 +87,33 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
     {
       phase: 'Phase 4: Cloud MLOps & Production',
       title: 'Google Cloud Vertex AI & Serverless Deployment',
-      status: 'Active Focus',
-      statusColor: 'text-blue-400 border-blue-500/30 bg-blue-500/10',
-      progress: 70,
-      description: 'Containerized inference microservices on Google Cloud Run, Vertex AI Model Garden, Secret Manager security, and CI/CD pipelines via Google Cloud Gen AI Academy.',
+      status: '100% Certified Graduate',
+      statusColor: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
+      progress: 100,
+      description: '100% completed Google Cloud Gen AI Academy APAC Edition Cohort 3 and received certificate. Participated in the post-Academy Ideathon and Meet the Builders program (both projects submitted and currently under evaluation).',
       milestones: [
-        'Docker containerization of Gemini API and PyTorch inference servers',
-        'Deploying auto-scaling stateless services to Google Cloud Run',
-        'Google Cloud Secret Manager dynamic credential injection',
-        'Evaluation benchmarks: latency, throughput, token efficiency, and Hallucination metrics'
+        '100% completed Google Cloud Gen AI Academy APAC Edition Cohort 3 & earned certificate',
+        'Submitted evaluated Gen AI project for the Google Cloud Gen AI Academy Ideathon',
+        'Engineered and submitted advanced solution for the Meet the Builders program',
+        'Deployed containerized inference services to Google Cloud Run with Secret Manager'
       ],
-      prompt: 'How do I architect a zero-downtime canary deployment on Google Cloud Run for an AI inference microservice?'
+      prompt: 'Help me outline my architectural presentation for the Google Cloud Gen AI Academy Ideathon and Meet the Builders evaluation review.'
     },
     {
       phase: 'Phase 5: Career Transition & Portfolio',
       title: 'Domain Synthesis: 14+ Yrs HR Leadership to AI/ML Engineer',
-      status: 'Accelerating',
-      statusColor: 'text-pink-400 border-pink-500/30 bg-pink-500/10',
-      progress: 65,
-      description: 'Deploying end-to-end talent intelligence systems, publishing technical case studies, and interviewing for Senior AI/ML Engineering roles.',
+      status: 'Accelerating (Internship Certified)',
+      statusColor: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
+      progress: 85,
+      description: 'Completed hands-on AI Internship and awarded official certificate. Deploying end-to-end talent intelligence systems, publishing technical case studies, and interviewing for AI/ML Engineering roles.',
       milestones: [
+        'Successfully completed AI Internship program & awarded official certificate',
         'Live Full-Stack AI/ML Career Transition & Technical Journal',
         'Talent & HR Algorithmic Intelligence Engine with Hybrid RAG',
         'Technical write-ups and GitHub repository open-sourcing',
         'Mock technical interviews & system design portfolio reviews'
       ],
-      prompt: 'Help me refine my 60-second elevator pitch explaining my transition from 14+ years of HR leadership to AI/ML Engineering.'
+      prompt: 'Help me synthesize my completed AI Internship and 14+ years of HR leadership into a powerful interview story for AI/ML Engineering roles.'
     }
   ];
 

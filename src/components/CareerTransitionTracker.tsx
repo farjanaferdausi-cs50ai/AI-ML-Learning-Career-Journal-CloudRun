@@ -10,7 +10,8 @@ import {
   Award,
   ChevronRight,
   TrendingUp,
-  Quote
+  Quote,
+  GraduationCap
 } from 'lucide-react';
 import type { CareerProgressData, LearningPlatform } from '../types';
 
@@ -35,6 +36,8 @@ export const CareerTransitionTracker: React.FC<CareerTransitionTrackerProps> = (
         return <Cloud className="w-4 h-4 text-violet-400" />;
       case 'codealpha':
         return <Terminal className="w-4 h-4 text-pink-400" />;
+      case 'institute':
+        return <GraduationCap className="w-4 h-4 text-purple-400" />;
       default:
         return <Compass className="w-4 h-4 text-cyan-400" />;
     }
@@ -111,7 +114,7 @@ export const CareerTransitionTracker: React.FC<CareerTransitionTrackerProps> = (
               <span>Multi-Platform AI/ML Curriculum</span>
             </h2>
             <span className="text-[10px] font-mono text-cyan-400/80 px-2 py-0.5 rounded-full bg-cyan-950/60 border border-cyan-500/30">
-              4 Active Tracks
+              {careerData.learningPlatforms.length} Active Tracks
             </span>
           </div>
           <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">
@@ -119,7 +122,7 @@ export const CareerTransitionTracker: React.FC<CareerTransitionTrackerProps> = (
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           {careerData.learningPlatforms.map((platform) => {
             const isSelected = selectedPlatform === platform.id;
             return (
@@ -167,9 +170,13 @@ export const CareerTransitionTracker: React.FC<CareerTransitionTrackerProps> = (
                 {/* Progress bar */}
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-[10px] font-mono">
-                    <span className="text-slate-400">Curriculum Mastery</span>
-                    <span className="font-semibold" style={{ color: platform.badgeColor }}>
+                    <span className="text-slate-400 flex items-center gap-1">
+                      {platform.progressPercentage >= 100 && <Award className="w-3 h-3 text-emerald-400" />}
+                      <span>Curriculum Mastery</span>
+                    </span>
+                    <span className="font-semibold flex items-center gap-1" style={{ color: platform.badgeColor }}>
                       {platform.progressPercentage}%
+                      {platform.progressPercentage >= 100 && <span className="text-[9px] text-emerald-300 font-bold">(Certified)</span>}
                     </span>
                   </div>
                   <div className="w-full h-1.5 rounded-full bg-slate-900 overflow-hidden">

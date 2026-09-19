@@ -32,8 +32,9 @@ import {
 import type { User } from 'firebase/auth';
 import type { UserRole, Topic, JournalSession, ProjectItem, JournalLocation } from '../types';
 import { NotificationPopover, INITIAL_NOTIFICATIONS } from './NotificationPopover';
-import { reverseGeocode, getGoogleMapsUrl } from '../lib/googleMaps';
-import { LocationPickerModal } from './LocationPickerModal';
+import { reverseGeocode, reverseGeocodeDetailed, getGoogleMapsUrl, type ReverseGeocodeResult } from '../lib/googleMaps';
+
+const LocationPickerModal = React.lazy(() => import('./LocationPickerModal').then(m => ({ default: m.LocationPickerModal })));
 
 export interface SearchItem {
   id: string;
@@ -62,7 +63,7 @@ interface HeaderProps {
   onUpdateSessionLocation?: (sessionId: string, location: JournalLocation | null) => Promise<void> | void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ 
+const HeaderComponent: React.FC<HeaderProps> = ({ 
   user, 
   userRole = 'user',
   theme = 'dark',
@@ -82,17 +83,21 @@ export const Header: React.FC<HeaderProps> = ({
   const [showLocation, setShowLocation] = useState(false);
   const [isFullMapPickerOpen, setIsFullMapPickerOpen] = useState(false);
   const [detectedPlace, setDetectedPlace] = useState('');
+  const [detectedDetails, setDetectedDetails] = useState<ReverseGeocodeResult | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
   const [isTaggingSaving, setIsTaggingSaving] = useState(false);
   const [locationState, setLocationState] = useState<{
-    status: 'idle' | 'detecting' | 'active' | 'denied' | 'not_detected';
+    status: 'idle' | 'detecting' | 'active' | 'denied' | 'unavailable' | 'timeout' | 'not_detected';
     coords: { lat: number; lng: number; accuracy?: number } | null;
     timestamp: number | null;
     errorMsg: string | null;
+    errorType?: 'denied' | 'unavailable' | 'timeout' | 'unsupported' | 'generic' | null;
   }>({
     status: 'idle',
     coords: null,
     timestamp: null,
     errorMsg: null,
+    errorType: null,
   });
 
   const locationRef = useRef<HTMLDivElement>(null);
@@ -103,13 +108,15 @@ export const Header: React.FC<HeaderProps> = ({
   }, [sessions]);
 
   // Real browser Geolocation API request (ONLY on user click, never on load)
+  // Configured with maximum hardware accuracy, fresh reading (maximumAge: 0), and distinct error handling
   const requestBrowserLocation = () => {
     if (typeof window === 'undefined' || !navigator || !navigator.geolocation) {
       setLocationState({
         status: 'not_detected',
         coords: null,
         timestamp: Date.now(),
-        errorMsg: 'Geolocation is not supported by your browser.'
+        errorType: 'unsupported',
+        errorMsg: 'Geolocation is not supported by your browser or device environment.'
       });
       return;
     }
@@ -117,41 +124,73 @@ export const Header: React.FC<HeaderProps> = ({
     setLocationState(prev => ({
       ...prev,
       status: 'detecting',
-      errorMsg: null
+      errorMsg: null,
+      errorType: null,
     }));
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        const accuracy = pos.coords.accuracy;
+        const accuracy = typeof pos.coords.accuracy === 'number' ? pos.coords.accuracy : undefined;
         setLocationState({
           status: 'active',
           coords: { lat, lng, accuracy },
           timestamp: pos.timestamp || Date.now(),
-          errorMsg: null
+          errorMsg: null,
+          errorType: null,
         });
 
+        setIsGeocoding(true);
         try {
-          const place = await reverseGeocode(lat, lng);
-          setDetectedPlace(place);
+          const details = await reverseGeocodeDetailed(lat, lng);
+          setDetectedDetails(details);
+          setDetectedPlace(details.placeName || `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`);
         } catch {
-          setDetectedPlace(`${lat.toFixed(4)}°, ${lng.toFixed(4)}°`);
+          const fallback = `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`;
+          setDetectedPlace(fallback);
+          setDetectedDetails({
+            placeName: fallback,
+            lat,
+            lng,
+            isFallbackCoordinates: true,
+          });
+        } finally {
+          setIsGeocoding(false);
         }
       },
       (err) => {
-        if (err.code === 1 || err.code === err.PERMISSION_DENIED) {
+        setIsGeocoding(false);
+        if (err.code === 1 || err.code === (err as any).PERMISSION_DENIED) {
           setLocationState({
             status: 'denied',
             coords: null,
             timestamp: Date.now(),
-            errorMsg: 'Permission Denied: Location access was blocked in browser settings.'
+            errorType: 'denied',
+            errorMsg: 'Location access was blocked in browser or device settings. Please allow location access in your settings to use auto-detection, or select manually via Map Picker.'
+          });
+        } else if (err.code === 2 || err.code === (err as any).POSITION_UNAVAILABLE) {
+          setLocationState({
+            status: 'unavailable',
+            coords: null,
+            timestamp: Date.now(),
+            errorType: 'unavailable',
+            errorMsg: 'Position unavailable: Your device could not determine a location. Please check your GPS or network connectivity and try again.'
+          });
+        } else if (err.code === 3 || err.code === (err as any).TIMEOUT) {
+          setLocationState({
+            status: 'timeout',
+            coords: null,
+            timestamp: Date.now(),
+            errorType: 'timeout',
+            errorMsg: 'Location request timed out after 10 seconds. Device GPS took too long to respond. Please check your signal and click Retry.'
           });
         } else {
           setLocationState({
             status: 'not_detected',
             coords: null,
             timestamp: Date.now(),
+            errorType: 'generic',
             errorMsg: err.message || 'Location could not be determined.'
           });
         }
@@ -159,12 +198,15 @@ export const Header: React.FC<HeaderProps> = ({
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 60000
+        maximumAge: 0
       }
     );
   };
 
   const handleLocationToggle = () => {
+    if (locationState.status === 'detecting' || isGeocoding) {
+      return;
+    }
     setShowLocation(prev => {
       const next = !prev;
       if (next) {
@@ -181,10 +223,17 @@ export const Header: React.FC<HeaderProps> = ({
     if (!currentSession?.id || !locationState.coords) return;
     setIsTaggingSaving(true);
     try {
+      const placeNameFinal = detectedPlace.trim() || `${locationState.coords.lat.toFixed(4)}°, ${locationState.coords.lng.toFixed(4)}°`;
       const newLoc: JournalLocation = {
         lat: locationState.coords.lat,
         lng: locationState.coords.lng,
-        placeName: detectedPlace.trim() || `${locationState.coords.lat.toFixed(4)}°, ${locationState.coords.lng.toFixed(4)}°`
+        accuracy: locationState.coords.accuracy,
+        placeName: placeNameFinal,
+        formattedAddress: detectedDetails?.formattedAddress || placeNameFinal,
+        city: detectedDetails?.city,
+        country: detectedDetails?.country,
+        isFallbackCoordinates: detectedDetails?.isFallbackCoordinates,
+        addedAt: Date.now(),
       };
       if (onUpdateSessionLocation) {
         await onUpdateSessionLocation(currentSession.id, newLoc);
@@ -296,37 +345,46 @@ export const Header: React.FC<HeaderProps> = ({
         id: 'plat-codebasics',
         title: 'CodeBasics: Python & Data Engineering',
         category: 'Learning Module',
-        description: 'Core foundations, NumPy, Pandas, data wrangling',
+        description: 'Core foundations, NumPy, Pandas, data wrangling, and ML math (8% completed)',
         targetTab: 'curriculum',
-        badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
-        dateOrMeta: 'Platform Track'
+        badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+        dateOrMeta: '8% Completed • In Progress'
       },
       {
         id: 'plat-ostad',
         title: 'Ostad: Structured AI/ML Curriculum',
         category: 'Learning Module',
-        description: 'End-to-end Machine Learning pipelines, model deployment, and live mentor sessions',
+        description: 'End-to-end Machine Learning pipelines, model deployment, and live mentor sessions (79.31% completed)',
         targetTab: 'curriculum',
-        badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
-        dateOrMeta: 'Platform Track'
+        badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+        dateOrMeta: '79.31% Completed • In Progress'
       },
       {
         id: 'plat-gcp',
-        title: 'Google Cloud Gen AI Academy',
+        title: 'Google Cloud Gen AI Academy (100% Certified)',
         category: 'Learning Module',
-        description: 'Vertex AI, Gemini models, embeddings, RAG architectures, and Cloud Run',
+        description: 'APAC Edition Cohort 3 Graduate. Official Certificate received. Ideathon & Meet the Builders projects submitted for evaluation.',
         targetTab: 'curriculum',
-        badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
-        dateOrMeta: 'Platform Track'
+        badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+        dateOrMeta: '100% Certified • Evaluation Active'
       },
       {
         id: 'plat-codealpha',
-        title: 'CodeAlpha: Hands-on Projects',
+        title: 'CodeAlpha AI Internship (100% Certified)',
         category: 'Learning Module',
-        description: 'Applied NLP architectures, computer vision prototypes, and production APIs',
+        description: 'Successfully completed AI Internship program and received official certificate. Applied deep learning pipelines, computer vision prototypes, and NLP APIs.',
         targetTab: 'curriculum',
-        badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
-        dateOrMeta: 'Platform Track'
+        badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+        dateOrMeta: '100% Certified • Internship Complete'
+      },
+      {
+        id: 'plat-institute',
+        title: 'The Institute: Advanced AI/ML Course',
+        category: 'Learning Module',
+        description: 'Recently started advanced AI/ML course at the Institute; completed 8% of the course so far.',
+        targetTab: 'curriculum',
+        badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+        dateOrMeta: '8% Completed • Recently Started'
       },
 
       // 2. Focus Area Topics
@@ -761,7 +819,11 @@ export const Header: React.FC<HeaderProps> = ({
         {onOpenMobileMenu && (
           <button
             id="mobile-header-menu-btn"
-            onClick={onOpenMobileMenu}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onOpenMobileMenu();
+            }}
             className="md:hidden min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-xl bg-[#131826] border border-[#1E293B] text-[#CBD5E1] hover:text-[#00F0FF] hover:border-cyan-400/50 transition-all cursor-pointer"
             aria-label="Open mobile navigation menu"
           >
@@ -1008,27 +1070,45 @@ export const Header: React.FC<HeaderProps> = ({
             id="header-location-btn"
             type="button"
             onClick={handleLocationToggle}
+            disabled={locationState.status === 'detecting' || isGeocoding}
+            aria-busy={locationState.status === 'detecting' || isGeocoding}
             className={`relative min-w-[38px] min-h-[38px] flex items-center justify-center p-2 rounded-xl border transition-all duration-200 ease-out cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#00F0FF] focus-visible:outline-none ${
-              showLocation 
-                ? 'bg-[#00F0FF]/15 border-[#00F0FF] text-[#00F0FF] shadow-[0_0_16px_rgba(0,240,255,0.3)]' 
-                : 'bg-[#131826] border-[#1E293B] text-[#CBD5E1] hover:text-[#00F0FF] hover:border-[#00F0FF]/50 hover:bg-[#1A2338]'
+              locationState.status === 'detecting' || isGeocoding
+                ? 'bg-cyan-500/15 border-cyan-400/50 text-[#00F0FF] cursor-wait'
+                : showLocation 
+                  ? 'bg-[#00F0FF]/15 border-[#00F0FF] text-[#00F0FF] shadow-[0_0_16px_rgba(0,240,255,0.3)]' 
+                  : 'bg-[#131826] border-[#1E293B] text-[#CBD5E1] hover:text-[#00F0FF] hover:border-[#00F0FF]/50 hover:bg-[#1A2338]'
             }`}
             aria-label="Tag Location on Journal Entry"
             aria-haspopup="dialog"
             aria-expanded={showLocation}
-            title={currentSession?.location ? `Tagged Location: ${currentSession.location.placeName}` : "Tag Study Session Location"}
+            title={
+              locationState.status === 'detecting'
+                ? "Detecting location via device GPS..."
+                : isGeocoding
+                  ? "Resolving human-readable address..."
+                  : currentSession?.location 
+                    ? `Tagged Location: ${currentSession.location.placeName}` 
+                    : "Tag Study Session Location"
+            }
           >
-            <MapPin className="w-4 h-4 transition-transform duration-200 hover:scale-110" />
+            {locationState.status === 'detecting' || isGeocoding ? (
+              <Loader2 className="w-4 h-4 animate-spin text-[#00F0FF]" />
+            ) : (
+              <MapPin className="w-4 h-4 transition-transform duration-200 hover:scale-110" />
+            )}
             
             {/* Status indicator badge */}
-            {currentSession?.location ? (
+            {locationState.status === 'detecting' || isGeocoding ? (
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+            ) : currentSession?.location ? (
               <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]" />
             ) : locationState.status === 'active' ? (
               <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#00F0FF]" />
             ) : locationState.status === 'denied' ? (
               <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-400 shadow-[0_0_6px_#f43f5e]" />
-            ) : locationState.status === 'detecting' ? (
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+            ) : locationState.status === 'unavailable' || locationState.status === 'timeout' ? (
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b]" />
             ) : null}
           </button>
 
@@ -1128,7 +1208,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <Loader2 className="w-4 h-4 animate-spin text-[#00F0FF] shrink-0" />
                     <div>
                       <div className="font-bold text-xs text-white">Detecting Device GPS...</div>
-                      <div className="text-[10px] text-slate-400">Requesting browser Geolocation permission</div>
+                      <div className="text-[10px] text-slate-400">Querying browser Geolocation with high accuracy</div>
                     </div>
                   </div>
                 )}
@@ -1141,18 +1221,34 @@ export const Header: React.FC<HeaderProps> = ({
                         Detected GPS Location
                       </span>
                       {locationState.coords.accuracy != null && (
-                        <span className="text-[10px] text-slate-400 font-mono">±{Math.round(locationState.coords.accuracy)}m</span>
+                        <span className="text-[10px] text-slate-400 font-mono" title={`Estimated accuracy radius: ±${Math.round(locationState.coords.accuracy)} meters`}>
+                          ±{Math.round(locationState.coords.accuracy)}m radius
+                        </span>
                       )}
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-400 block mb-1">Venue / Place Name:</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] text-slate-400 block">Venue / Place Name:</label>
+                        {isGeocoding && (
+                          <span className="text-[10px] text-cyan-300 flex items-center gap-1 font-mono">
+                            <Loader2 className="w-2.5 h-2.5 animate-spin text-[#00F0FF]" />
+                            Resolving address...
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         value={detectedPlace}
                         onChange={(e) => setDetectedPlace(e.target.value)}
-                        placeholder="e.g. MIT Stata Center / Home Study Lab"
-                        className="w-full bg-[#131826] border border-[#1E293B] focus:border-[#00F0FF] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
+                        placeholder={isGeocoding ? "Resolving address via Google Maps..." : "e.g. MIT Stata Center / Home Study Lab"}
+                        disabled={isGeocoding}
+                        className="w-full bg-[#131826] border border-[#1E293B] focus:border-[#00F0FF] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none disabled:opacity-75"
                       />
+                      {!isGeocoding && detectedDetails?.isFallbackCoordinates && (
+                        <p className="text-[9px] text-slate-400 italic mt-1">
+                          Address lookup unavailable — coordinates recorded.
+                        </p>
+                      )}
                     </div>
                     <div className="flex justify-between text-[10px] text-slate-400">
                       <span>Lat: {locationState.coords.lat.toFixed(4)}°</span>
@@ -1164,7 +1260,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <button
                         type="button"
                         onClick={handleTagCurrentEntry}
-                        disabled={isTaggingSaving}
+                        disabled={isTaggingSaving || isGeocoding}
                         className="w-full mt-1.5 flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-gradient-to-r from-[#00F0FF] to-cyan-500 hover:from-cyan-400 hover:to-cyan-600 text-[#040817] font-bold text-xs transition-all shadow-md shadow-cyan-500/20 cursor-pointer disabled:opacity-50"
                       >
                         {isTaggingSaving ? (
@@ -1190,13 +1286,53 @@ export const Header: React.FC<HeaderProps> = ({
                       <span>Permission Denied</span>
                     </div>
                     <p className="text-[10px] text-slate-300 leading-relaxed">
-                      Location access was blocked in browser settings. You can still manually search and tag any study venue using the Interactive Map Picker.
+                      Location access was blocked in browser or device settings. Please allow location permission in your browser/device settings to use auto-detection, or search and tag manually via the Map Picker.
                     </p>
                   </div>
                 )}
 
+                {locationState.status === 'unavailable' && (
+                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-2 text-amber-400">
+                    <div className="flex items-center gap-1.5 font-bold text-xs">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                      <span>Position Unavailable</span>
+                    </div>
+                    <p className="text-[10px] text-slate-300 leading-relaxed">
+                      Your device could not determine a location. Please check your GPS and network connectivity and try again.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={requestBrowserLocation}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 hover:text-white text-[10px] font-mono cursor-pointer transition-colors"
+                    >
+                      <RotateCw className="w-3 h-3" />
+                      <span>Retry Detection</span>
+                    </button>
+                  </div>
+                )}
+
+                {locationState.status === 'timeout' && (
+                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-2 text-amber-400">
+                    <div className="flex items-center gap-1.5 font-bold text-xs">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                      <span>Request Timed Out</span>
+                    </div>
+                    <p className="text-[10px] text-slate-300 leading-relaxed">
+                      Location request timed out after 10 seconds. Device positioning or network took too long to respond.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={requestBrowserLocation}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 hover:text-white text-[10px] font-mono cursor-pointer transition-colors"
+                    >
+                      <RotateCw className="w-3 h-3" />
+                      <span>Retry Detection</span>
+                    </button>
+                  </div>
+                )}
+
                 {locationState.status === 'not_detected' && (
-                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-1.5 text-amber-400">
+                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-2 text-amber-400">
                     <div className="flex items-center gap-1.5 font-bold text-xs">
                       <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                       <span>Location Not Detected</span>
@@ -1204,6 +1340,14 @@ export const Header: React.FC<HeaderProps> = ({
                     <p className="text-[10px] text-slate-300 leading-relaxed">
                       {locationState.errorMsg || 'Unable to determine GPS coordinates.'}
                     </p>
+                    <button
+                      type="button"
+                      onClick={requestBrowserLocation}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 hover:text-white text-[10px] font-mono cursor-pointer transition-colors"
+                    >
+                      <RotateCw className="w-3 h-3" />
+                      <span>Retry Detection</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -1497,24 +1641,28 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Full Interactive Map Picker Modal */}
       {isFullMapPickerOpen && (
-        <LocationPickerModal
-          isOpen={isFullMapPickerOpen}
-          initialLocation={currentSession?.location || (locationState.coords ? {
-            lat: locationState.coords.lat,
-            lng: locationState.coords.lng,
-            placeName: detectedPlace || 'Current Location'
-          } : null)}
-          onClose={() => setIsFullMapPickerOpen(false)}
-          onSelectLocation={async (loc) => {
-            if (currentSession?.id && onUpdateSessionLocation) {
-              await onUpdateSessionLocation(currentSession.id, loc);
-            }
-            setIsFullMapPickerOpen(false);
-          }}
-        />
+        <React.Suspense fallback={null}>
+          <LocationPickerModal
+            isOpen={isFullMapPickerOpen}
+            initialLocation={currentSession?.location || (locationState.coords ? {
+              lat: locationState.coords.lat,
+              lng: locationState.coords.lng,
+              placeName: detectedPlace || 'Current Location'
+            } : null)}
+            onClose={() => setIsFullMapPickerOpen(false)}
+            onSelectLocation={async (loc) => {
+              if (currentSession?.id && onUpdateSessionLocation) {
+                await onUpdateSessionLocation(currentSession.id, loc);
+              }
+              setIsFullMapPickerOpen(false);
+            }}
+          />
+        </React.Suspense>
       )}
 
     </header>
   );
 };
+
+export const Header = React.memo(HeaderComponent);
 

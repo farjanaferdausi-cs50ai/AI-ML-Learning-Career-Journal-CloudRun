@@ -50,6 +50,15 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
   }, [initialLocation, isOpen]);
 
   useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
     if (isOpen) {
       // Trigger festive confetti burst
       try {
@@ -107,8 +116,17 @@ ${summary.actionableGoalTomorrow}
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-2xl max-h-[90vh] glass-panel-glow rounded-2xl overflow-hidden flex flex-col shadow-[0_0_50px_rgba(0,243,255,0.25)] border border-cyan-400/50">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Session Summary"
+    >
+      <div 
+        className="relative w-full max-w-2xl max-h-[90vh] glass-panel-glow rounded-2xl overflow-hidden flex flex-col shadow-[0_0_50px_rgba(0,243,255,0.25)] border border-cyan-400/50"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header */}
         <div className="px-6 py-4 bg-[#0a1428] border-b border-cyan-500/30 flex items-center justify-between">
@@ -130,8 +148,13 @@ ${summary.actionableGoalTomorrow}
           </div>
 
           <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            aria-label="Close session summary"
           >
             <X className="w-5 h-5" />
           </button>
@@ -289,7 +312,11 @@ ${summary.actionableGoalTomorrow}
           </button>
 
           <button
-            onClick={onClose}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
             className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-bold text-xs font-mono tracking-wider shadow-[0_0_15px_rgba(0,243,255,0.3)] transition-all cursor-pointer flex items-center gap-2"
           >
             <BookmarkCheck className="w-4 h-4" />

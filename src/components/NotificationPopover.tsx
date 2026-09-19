@@ -18,6 +18,61 @@ import type { AppNotification } from '../types';
 
 export const INITIAL_NOTIFICATIONS: AppNotification[] = [
   {
+    id: 'notif-codebasics-progress',
+    title: 'CodeBasics Progress Updated 📊',
+    description: 'Updated CodeBasics course progress tracking to 8% completed.',
+    category: 'milestone',
+    timestamp: 'Just now',
+    read: false,
+    actionTab: 'curriculum',
+    actionTargetId: 'curriculum-section',
+    actionLabel: 'View Curriculum'
+  },
+  {
+    id: 'notif-ostad-progress',
+    title: 'Ostad Progress Updated! 📈',
+    description: 'Advanced Ostad structured curriculum progress to 79.31% completed.',
+    category: 'milestone',
+    timestamp: 'Just now',
+    read: false,
+    actionTab: 'curriculum',
+    actionTargetId: 'curriculum-section',
+    actionLabel: 'View Curriculum'
+  },
+  {
+    id: 'notif-course-institute',
+    title: 'Course Started at The Institute 🚀',
+    description: 'Recently started the advanced AI/ML course at The Institute; completed 8% of the curriculum so far.',
+    category: 'milestone',
+    timestamp: 'Just now',
+    read: false,
+    actionTab: 'curriculum',
+    actionTargetId: 'curriculum-section',
+    actionLabel: 'View Course Track'
+  },
+  {
+    id: 'notif-cert-internship',
+    title: 'AI Internship Certificate Awarded! 🏆',
+    description: 'Successfully completed your AI Internship program and received your official internship certificate.',
+    category: 'milestone',
+    timestamp: 'Just now',
+    read: false,
+    actionTab: 'curriculum',
+    actionTargetId: 'curriculum-section',
+    actionLabel: 'View Certificate'
+  },
+  {
+    id: 'notif-cert-gcp',
+    title: 'Gen AI Academy Certificate Awarded! 🎓',
+    description: '100% completed Google Cloud Gen AI Academy APAC Edition Cohort 3 and received official certificate. Ideathon & Meet the Builders submissions under evaluation.',
+    category: 'milestone',
+    timestamp: 'Just now',
+    read: false,
+    actionTab: 'portfolio',
+    actionTargetId: 'portfolio-section',
+    actionLabel: 'View Projects'
+  },
+  {
     id: 'notif-1',
     title: 'AI Coach Synthesis Ready',
     description: 'Generated deep architecture notes and practical code snippets for PyTorch neural network layers.',
@@ -41,14 +96,14 @@ export const INITIAL_NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'notif-3',
-    title: 'Google Cloud Gen AI Academy Updated',
-    description: 'New module on Multimodal Gemini APIs & Prompt Engineering added to your curriculum.',
+    title: '2 Evaluation Submissions Active',
+    description: 'Google Cloud Ideathon & Meet the Builders projects are currently under formal evaluation.',
     category: 'curriculum',
     timestamp: '1d ago',
     read: false,
-    actionTab: 'learn',
-    actionTargetId: 'curriculum-section',
-    actionLabel: 'View Curriculum'
+    actionTab: 'portfolio',
+    actionTargetId: 'portfolio-section',
+    actionLabel: 'View Portfolio'
   },
   {
     id: 'notif-4',
@@ -232,7 +287,11 @@ export const NotificationPopover: React.FC<NotificationPopoverProps> = ({
 
         <button
           id="close-notifications-btn"
-          onClick={onClose}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClose();
+          }}
           className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors cursor-pointer"
           aria-label="Close notifications panel"
         >

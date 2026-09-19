@@ -7,7 +7,9 @@ import {
   Terminal,
   BookOpen,
   Layers,
-  Sparkles
+  Sparkles,
+  Award,
+  CheckCircle2
 } from 'lucide-react';
 import type { CareerProgressData } from '../types';
 import { CurriculumSkeleton } from './common/LoadingState';
@@ -37,42 +39,52 @@ export const CurriculumSection: React.FC<CurriculumSectionProps> = ({
     {
       id: 'google-cloud',
       name: 'Google Cloud Gen AI Academy',
-      role: 'Vertex AI & Cloud Architecture',
-      badge: 'TRENDING',
-      badgeColor: '#a855f7',
-      focus: 'Generative AI, Vertex AI Pipelines & Cloud Run Deployment',
-      percentage: 71,
+      role: 'APAC Edition Cohort 3 Graduate (Google Cloud & Hack2skill)',
+      badge: '100% CERTIFIED',
+      badgeColor: '#10b981',
+      focus: 'Conducted by Google Cloud & Hack2skill. Completed 100% of APAC Edition Cohort 3 with official certificate. Ideathon project & Meet the Builders project, blog post, and materials submitted, currently awaiting evaluation.',
+      percentage: 100,
       iconType: 'google-cloud'
     },
     {
       id: 'codebasics',
       name: 'CodeBasics',
       role: 'Data Science & Analytics',
-      badge: 'ACTIVE',
+      badge: '8% IN PROGRESS',
       badgeColor: '#10b981',
-      focus: 'Data Science & Analytics learning platform, Python, ML Math & Neural Networks',
-      percentage: 85,
+      focus: 'Data Science & Analytics learning platform, Python, ML Math & Neural Networks (8% completed so far)',
+      percentage: 8,
       iconType: 'codebasics'
     },
     {
       id: 'codealpha',
-      name: 'CodeAlpha',
-      role: 'Applied Projects & Internship',
-      badge: 'ACTIVE',
-      badgeColor: '#f43f5e',
-      focus: 'Real-world project-based internship and applied AI/ML practice platform',
-      percentage: 80,
+      name: 'CodeAlpha AI Internship',
+      role: 'AI Engineering Intern (Certified)',
+      badge: '100% CERTIFIED',
+      badgeColor: '#10b981',
+      focus: 'Successfully completed AI Internship program and awarded official certificate. Built real-world deep learning models, computer vision prototypes, and applied NLP pipelines.',
+      percentage: 100,
       iconType: 'codealpha'
     },
     {
       id: 'ostad',
       name: 'Ostad',
       role: 'Live Skills Bootcamp',
-      badge: 'PROGRESS',
+      badge: '79.31% IN PROGRESS',
       badgeColor: '#00F0FF',
-      focus: 'Tech skills bootcamp & live AI/ML masterclass platform with live mentor review',
-      percentage: 78,
+      focus: 'Tech skills bootcamp & live AI/ML masterclass platform with live mentor review (79.31% completed)',
+      percentage: 79.31,
       iconType: 'ostad'
+    },
+    {
+      id: 'institute',
+      name: 'The Institute',
+      role: 'Advanced AI/ML Course',
+      badge: '8% IN PROGRESS',
+      badgeColor: '#a855f7',
+      focus: 'Recently started advanced AI/ML course curriculum at the Institute; completed foundational orientation and core modules (8% completed so far).',
+      percentage: 8,
+      iconType: 'institute'
     }
   ];
 
@@ -102,6 +114,12 @@ export const CurriculumSection: React.FC<CurriculumSectionProps> = ({
             <GraduationCap className="w-4 h-4" />
           </div>
         );
+      case 'institute':
+        return (
+          <div className="w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.25)] shrink-0">
+            <GraduationCap className="w-4 h-4" />
+          </div>
+        );
       default:
         return (
           <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-400/40 flex items-center justify-center text-blue-300 shrink-0">
@@ -124,7 +142,7 @@ export const CurriculumSection: React.FC<CurriculumSectionProps> = ({
             MULTI-PLATFORM AI/ML CURRICULUM
           </h2>
           <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-400/40 shadow-[0_0_8px_rgba(0,240,255,0.15)]">
-            4 ACTIVE PLATFORMS
+            {defaultPlatforms.length} ACTIVE TRACKS
           </span>
         </div>
 
@@ -206,6 +224,79 @@ export const CurriculumSection: React.FC<CurriculumSectionProps> = ({
                 <p className="text-xs text-slate-300 leading-relaxed line-clamp-2 pt-0.5">
                   {platform.focus}
                 </p>
+
+                {platform.id === 'google-cloud' && (
+                  <div className="pt-2 flex flex-wrap gap-1.5">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/15 border border-purple-500/30 text-[10px] font-mono text-purple-300 font-semibold">
+                      <Cloud className="w-3 h-3 text-purple-400" />
+                      <span>Google Cloud &amp; Hack2skill</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono text-emerald-300 font-semibold">
+                      <Award className="w-3 h-3 text-emerald-400" />
+                      <span>100% Certified</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-[10px] font-mono text-amber-300 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      <span>Ideathon (Project Submitted • Awaiting Evaluation)</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-[10px] font-mono text-cyan-300 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                      <span>Meet the Builders (Project, Blog &amp; Materials Submitted • Awaiting Evaluation)</span>
+                    </span>
+                  </div>
+                )}
+
+                {platform.id === 'codealpha' && (
+                  <div className="pt-2 flex flex-wrap gap-1.5">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono text-emerald-300 font-semibold">
+                      <Award className="w-3 h-3 text-emerald-400" />
+                      <span>Internship Certificate Received</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-[10px] font-mono text-cyan-300 font-semibold">
+                      <CheckCircle2 className="w-3 h-3 text-cyan-400" />
+                      <span>All Deliverables Complete</span>
+                    </span>
+                  </div>
+                )}
+
+                {platform.id === 'codebasics' && (
+                  <div className="pt-2 flex flex-wrap gap-1.5">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono text-emerald-300 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>Foundations &amp; Python • 8% Complete</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-500/15 border border-teal-500/30 text-[10px] font-mono text-teal-300 font-semibold">
+                      <BookOpen className="w-3 h-3 text-teal-400" />
+                      <span>Linear Algebra &amp; Math</span>
+                    </span>
+                  </div>
+                )}
+
+                {platform.id === 'institute' && (
+                  <div className="pt-2 flex flex-wrap gap-1.5">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/15 border border-purple-500/30 text-[10px] font-mono text-purple-300 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                      <span>Recently Started • 8% Complete</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-[10px] font-mono text-indigo-300 font-semibold">
+                      <BookOpen className="w-3 h-3 text-indigo-400" />
+                      <span>Foundational Orientation</span>
+                    </span>
+                  </div>
+                )}
+
+                {platform.id === 'ostad' && (
+                  <div className="pt-2 flex flex-wrap gap-1.5">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-[10px] font-mono text-cyan-300 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                      <span>Active Bootcamp • 79.31% Complete</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/15 border border-blue-500/30 text-[10px] font-mono text-blue-300 font-semibold">
+                      <GraduationCap className="w-3 h-3 text-blue-400" />
+                      <span>Live Mentor Sessions</span>
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Progress Bar & Percentage Bottom */}

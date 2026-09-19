@@ -67,13 +67,13 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
     };
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('keydown', handleKeyDown);
     } else {
       document.body.style.overflow = '';
     }
     return () => {
       document.body.style.overflow = '';
-      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
 
@@ -89,12 +89,19 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
     <div className="md:hidden fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-label="Mobile Navigation">
       {/* Backdrop */}
       <div 
-        onClick={onClose}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onClose();
+        }}
         className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
       />
 
       {/* Drawer Panel */}
-      <div className="relative w-4/5 max-w-xs bg-[#050b18] border-r border-[#142347] flex flex-col justify-between h-full z-10 overflow-y-auto shadow-2xl animate-in slide-in-from-left duration-200">
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-4/5 max-w-xs bg-[#050b18] border-r border-[#142347] flex flex-col justify-between h-full z-10 overflow-y-auto shadow-2xl animate-in slide-in-from-left duration-200"
+      >
         
         {/* Header */}
         <div className="p-4 border-b border-[#121c33] flex items-center justify-between">
@@ -118,7 +125,11 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
           </button>
 
           <button
-            onClick={onClose}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
             className="p-1.5 rounded-lg bg-[#091124] text-slate-400 hover:text-white border border-[#182647] cursor-pointer"
             aria-label="Close navigation"
           >

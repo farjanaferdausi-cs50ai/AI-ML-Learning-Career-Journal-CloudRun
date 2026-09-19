@@ -71,7 +71,11 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
       {/* Menu / More Drawer Opener */}
       <button
         id="bottom-nav-menu"
-        onClick={onOpenMobileMenu}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onOpenMobileMenu();
+        }}
         aria-expanded={isMenuOpen}
         className={`flex flex-col items-center justify-center min-h-[48px] py-1 px-1.5 sm:px-2 rounded-xl transition-all duration-200 ease-out cursor-pointer min-w-[52px] active:scale-95 focus-visible:ring-2 focus-visible:ring-[#00F0FF] focus-visible:outline-none ${
           isMenuOpen

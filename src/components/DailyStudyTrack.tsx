@@ -176,9 +176,13 @@ export const DailyStudyTrack: React.FC<DailyStudyTrackProps> = ({
   const inProgressCount = days.filter(d => d.status === 'in_progress').length;
   const totalHours = days.reduce((acc, d) => acc + d.hoursLogged, 0);
 
-  const handleToggleStatus = (dayNumber: number) => {
+  const handleToggleStatus = (dayNumber: number, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const current = days.find(d => d.dayNumber === dayNumber);
-    const nextStatus = (current?.status === 'completed' ? 'in_progress' : current?.status === 'in_progress' ? 'completed' : 'in_progress') as StudyDay['status'];
+    const nextStatus = (current?.status === 'completed' ? 'in_progress' : 'completed') as StudyDay['status'];
     
     if (onToggleStatus) {
       onToggleStatus(dayNumber, nextStatus);
@@ -373,7 +377,7 @@ export const DailyStudyTrack: React.FC<DailyStudyTrackProps> = ({
             {/* Actions for Selected Day */}
             <div className="flex items-center gap-2">
               <button
-                onClick={() => handleToggleStatus(selectedDay.dayNumber)}
+                onClick={(e) => handleToggleStatus(selectedDay.dayNumber, e)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
                   selectedDay.status === 'completed'
                     ? 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 hover:bg-emerald-500/30'
@@ -453,7 +457,11 @@ export const DailyStudyTrack: React.FC<DailyStudyTrackProps> = ({
               </h3>
               <button
                 type="button"
-                onClick={() => setShowAddModal(false)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowAddModal(false);
+                }}
                 className="text-slate-400 hover:text-white font-mono text-xs cursor-pointer"
               >
                 ✕

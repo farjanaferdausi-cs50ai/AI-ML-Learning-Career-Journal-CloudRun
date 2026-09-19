@@ -25,7 +25,7 @@ interface DashboardRightSidebarProps {
   sessions?: JournalSession[];
 }
 
-export const DashboardRightSidebar: React.FC<DashboardRightSidebarProps> = ({
+const DashboardRightSidebarComponent: React.FC<DashboardRightSidebarProps> = ({
   onAICoachPrompt,
   onNavigateTab,
   sessions = []
@@ -332,3 +332,5 @@ export const DashboardRightSidebar: React.FC<DashboardRightSidebarProps> = ({
     </div>
   );
 };
+
+export const DashboardRightSidebar = React.memo(DashboardRightSidebarComponent);

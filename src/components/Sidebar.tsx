@@ -18,7 +18,9 @@ import {
   ShieldCheck,
   Sliders,
   LogOut,
-  LogIn
+  LogIn,
+  Users,
+  Target
 } from 'lucide-react';
 import type { UserRole } from '../types';
 import type { User } from 'firebase/auth';
@@ -33,7 +35,7 @@ interface SidebarProps {
   onOpenAuthModal?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({
+const SidebarComponent: React.FC<SidebarProps> = ({
   activeTab = 'home',
   onSelectTab,
   userRole = 'user',
@@ -49,6 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Refs for outside click detection
   const settingsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+  const drawerContentRef = useRef<HTMLDivElement>(null);
 
   // Close opened menus/panels on Escape key & outside clicks
   useEffect(() => {
@@ -62,6 +65,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
+
+      // Drawer outside click
+      if (drawerContentRef.current && !drawerContentRef.current.contains(target)) {
+        const hamburgerBtn = document.getElementById('sidebar-hamburger-btn');
+        if (!hamburgerBtn?.contains(target)) {
+          setIsDrawerOpen(false);
+        }
+      }
 
       // Settings flyout outside click
       if (settingsRef.current && !settingsRef.current.contains(target)) {
@@ -80,10 +91,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
@@ -91,15 +102,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Full navigation items for expanded drawer
   const allNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'projects', label: 'Projects', icon: FolderGit2 },
-    { id: 'aicoach', label: 'AI Coach', icon: Bot },
+    { id: 'roadmap', label: 'Roadmap', icon: Map },
     { id: 'curriculum', label: 'Curriculum', icon: BookOpen },
+    { id: 'focustopics', label: 'Focus Topics', icon: Compass },
+    { id: 'aicoach', label: 'AI Coach', icon: Bot },
+    { id: 'progress', label: 'Progress', icon: Activity },
+    { id: 'projects', label: 'Projects', icon: FolderGit2 },
     { id: 'journal', label: 'Journal', icon: BookText },
+    { id: 'resources', label: 'Resources', icon: BookOpen },
+    { id: 'community', label: 'Community', icon: Users },
     { id: 'achievements', label: 'Achievements', icon: Award },
     { id: 'analytics', label: 'Analytics', icon: Activity },
-    { id: 'focustopics', label: 'Focus Topics', icon: Compass },
-    { id: 'goals', label: 'Goals', icon: Map },
+    { id: 'goals', label: 'Goals', icon: Target },
     { id: 'settings', label: 'Settings', icon: Settings },
+    ...(userRole === 'admin' ? [{ id: 'admin', label: 'Admin Command Center', icon: ShieldCheck }] : [])
   ];
 
   const handleNavClick = (id: string) => {
@@ -136,6 +152,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             id="sidebar-hamburger-btn"
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               setIsDrawerOpen(prev => !prev);
               setIsSettingsOpen(false);
@@ -226,6 +243,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div
                 ref={settingsRef}
                 id="sidebar-settings-popover"
+                onClick={(e) => e.stopPropagation()}
                 className="fixed top-24 left-[58px] lg:left-[68px] z-50 w-80 max-w-[calc(100vw-5rem)] rounded-2xl bg-[#0B0F19]/98 border border-[#1E293B] shadow-[0_16px_48px_rgba(0,0,0,0.8),0_0_24px_rgba(0,240,255,0.18)] p-4 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 text-xs font-mono select-none"
               >
                 {/* Header */}
@@ -238,7 +256,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                   <button
                     id="close-sidebar-settings-btn"
-                    onClick={() => setIsSettingsOpen(false)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsSettingsOpen(false);
+                    }}
                     className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors cursor-pointer"
                     aria-label="Close Settings panel"
                   >
@@ -315,6 +337,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div
               ref={profileRef}
               id="sidebar-profile-popover"
+              onClick={(e) => e.stopPropagation()}
               className="fixed bottom-4 left-[58px] lg:left-[68px] z-50 w-72 max-w-[calc(100vw-5rem)] rounded-2xl bg-[#0B0F19]/98 border border-[#1E293B] shadow-[0_16px_48px_rgba(0,0,0,0.8),0_0_24px_rgba(0,240,255,0.18)] p-4 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 text-xs font-mono select-none"
             >
               {/* Header */}
@@ -333,7 +356,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
                 <button
                   id="close-sidebar-profile-btn"
-                  onClick={() => setIsProfileOpen(false)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsProfileOpen(false);
+                  }}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors cursor-pointer"
                   aria-label="Close Profile panel"
                 >
@@ -406,12 +433,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div 
             id="sidebar-drawer-backdrop"
             className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsDrawerOpen(false)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsDrawerOpen(false);
+            }}
           />
 
           {/* Drawer Content - Positioned next to the left rail */}
           <div 
             id="sidebar-drawer-content"
+            ref={drawerContentRef}
+            onClick={(e) => e.stopPropagation()}
             className="fixed top-0 bottom-0 left-[54px] lg:left-[64px] w-72 max-w-[calc(100vw-4.5rem)] bg-[#0B0F19] border-r border-[#1E293B] shadow-2xl p-5 flex flex-col justify-between z-50 animate-in slide-in-from-left duration-200"
           >
             
@@ -439,7 +472,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 <button
                   id="close-sidebar-drawer-btn"
-                  onClick={() => setIsDrawerOpen(false)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDrawerOpen(false);
+                  }}
                   className="p-1.5 rounded-lg bg-[#131826] border border-[#1E293B] text-slate-400 hover:text-white cursor-pointer transition-colors"
                   aria-label="Close menu"
                 >
@@ -482,3 +519,5 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </>
   );
 };
+
+export const Sidebar = React.memo(SidebarComponent);

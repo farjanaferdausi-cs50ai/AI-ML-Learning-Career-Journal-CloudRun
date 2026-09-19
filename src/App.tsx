@@ -5,26 +5,24 @@ import { Header } from './components/Header';
 import { HeroBanner } from './components/HeroBanner';
 import { RoleTargetBar } from './components/RoleTargetBar';
 import { KeyStatsRow } from './components/KeyStatsRow';
-import { CurriculumSection } from './components/CurriculumSection';
-import { DailyStudyTrack, StudyDay } from './components/DailyStudyTrack';
-import { TopicManager } from './components/TopicManager';
-import { AICoachChat } from './components/AICoachChat';
-import { QuickActionsFocusRow } from './components/QuickActionsFocusRow';
-import { LearningTimeline } from './components/LearningTimeline';
+import type { StudyDay } from './components/DailyStudyTrack';
 import { BottomNavBar } from './components/BottomNavBar';
 import { MobileDrawer } from './components/MobileDrawer';
 import { ToastProvider, useToast } from './components/common/SuccessFeedback';
 import { AnalyticsSkeleton, LoadingState } from './components/common/LoadingState';
-
-import { ProactiveCoachSuggestion } from './components/ProactiveCoachSuggestion';
-import { WeakSkillsCard } from './components/WeakSkillsCard';
-import { CareerIntelligenceCard } from './components/CareerIntelligenceCard';
-import { TrendsView } from './components/TrendsView';
-import { SmartStudyPlanner } from './components/SmartStudyPlanner';
 import { DashboardView } from './components/DashboardView';
-import { AchievementsView } from './components/AchievementsView';
+import { ArrowLeft, X } from 'lucide-react';
 
-// Lazy-loaded secondary tab views and modals for optimal bundle splitting
+// Lazy-loaded secondary tab views and modules for optimal bundle splitting
+const CurriculumSection = React.lazy(() => import('./components/CurriculumSection').then(m => ({ default: m.CurriculumSection })));
+const DailyStudyTrack = React.lazy(() => import('./components/DailyStudyTrack').then(m => ({ default: m.DailyStudyTrack })));
+const TopicManager = React.lazy(() => import('./components/TopicManager').then(m => ({ default: m.TopicManager })));
+const AICoachChat = React.lazy(() => import('./components/AICoachChat').then(m => ({ default: m.AICoachChat })));
+const LearningTimeline = React.lazy(() => import('./components/LearningTimeline').then(m => ({ default: m.LearningTimeline })));
+const ProactiveCoachSuggestion = React.lazy(() => import('./components/ProactiveCoachSuggestion').then(m => ({ default: m.ProactiveCoachSuggestion })));
+const TrendsView = React.lazy(() => import('./components/TrendsView').then(m => ({ default: m.TrendsView })));
+const SmartStudyPlanner = React.lazy(() => import('./components/SmartStudyPlanner').then(m => ({ default: m.SmartStudyPlanner })));
+const AchievementsView = React.lazy(() => import('./components/AchievementsView').then(m => ({ default: m.AchievementsView })));
 const RoadmapView = React.lazy(() => import('./components/RoadmapView').then(m => ({ default: m.RoadmapView })));
 const ExploreView = React.lazy(() => import('./components/ExploreView').then(m => ({ default: m.ExploreView })));
 const PortfolioView = React.lazy(() => import('./components/PortfolioView').then(m => ({ default: m.PortfolioView })));
@@ -114,11 +112,126 @@ function AppContent() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  // Active Navigation Tab
+  // Active Navigation Tab with browser history synchronization
   const [activeTab, setActiveTab] = useState<string>('home');
+  const [tabHistory, setTabHistory] = useState<string[]>(['home']);
   const [showMobileMenu, setShowMobileMenu] = useState<boolean>(false);
+
+  // Friendly title dictionary for navigation header & breadcrumbs
+  const tabTitles: Record<string, string> = useMemo(() => ({
+    home: 'Dashboard',
+    dashboard: 'Dashboard',
+    roadmap: 'Career Transition Roadmap',
+    curriculum: 'Curriculum & Courses',
+    learn: 'Curriculum & Courses',
+    focustopics: 'Focus Topics & Explorer',
+    explore: 'Focus Topics & Explorer',
+    aicoach: 'AI Coach Command Center',
+    coach: 'AI Coach Command Center',
+    progress: 'Progress & Competency Matrix',
+    projects: 'Projects & Portfolio',
+    portfolio: 'Projects & Portfolio',
+    journal: 'Learning & Reflection Journal',
+    resources: 'Learning Resource Library',
+    community: 'Community Hub & Network',
+    achievements: 'Achievements & Milestones',
+    analytics: 'Advanced Learning Analytics',
+    goals: 'Goals & Study Planner',
+    planner: 'Goals & Study Planner',
+    trends: 'Trends & Journal Intelligence',
+    settings: 'System Preferences & Config',
+    admin: 'Admin Command Center',
+  }), []);
+
+  // Centralized tab navigation with history pushState
+  const navigateToTab = useCallback((newTab: string, pushHistory: boolean = true) => {
+    const normalized = (newTab === 'dashboard' || newTab === 'home') ? 'home' : newTab;
+    setActiveTab(normalized);
+    if (pushHistory) {
+      try {
+        window.history.pushState({ tab: normalized }, '', `#${normalized}`);
+      } catch (_) {}
+      setTabHistory(prev => (prev[prev.length - 1] === normalized ? prev : [...prev, normalized]));
+    }
+
+    const mainEl = document.getElementById('main-content-area');
+    if (mainEl) {
+      mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
+
+  // Unified single-click Back / Close / Escape navigation handler
+  const handleClosePage = useCallback((e?: React.SyntheticEvent | Event | KeyboardEvent) => {
+    if (e && 'preventDefault' in e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setActiveTab('home');
+    setTabHistory(['home']);
+    try {
+      window.history.replaceState({ tab: 'home' }, '', '#home');
+    } catch (_) {}
+    const mainEl = document.getElementById('main-content-area');
+    if (mainEl) {
+      mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
+
+  // Back button handler (unified with handleClosePage for deterministic single-click navigation)
+  const handleGoBack = useCallback((e?: React.SyntheticEvent | Event | KeyboardEvent) => {
+    handleClosePage(e);
+  }, [handleClosePage]);
+
+  // Listen to popstate for browser Back & Forward navigation and sync initial URL hash
+  useEffect(() => {
+    const initialHash = window.location.hash.replace('#', '');
+    if (initialHash && initialHash !== 'home' && initialHash !== 'dashboard') {
+      setActiveTab(initialHash);
+      setTabHistory(['home', initialHash]);
+      try {
+        window.history.replaceState({ tab: initialHash }, '', `#${initialHash}`);
+      } catch (_) {}
+    } else {
+      try {
+        window.history.replaceState({ tab: 'home' }, '', '#home');
+      } catch (_) {}
+    }
+
+    const handlePopState = (e: PopStateEvent) => {
+      const targetTab = e.state?.tab || window.location.hash.replace('#', '') || 'home';
+      setActiveTab(targetTab);
+      setTabHistory(prev => {
+        if (prev.length > 1) {
+          return prev.slice(0, -1);
+        }
+        return ['home'];
+      });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Global Escape key support on document to close any open sub-page on first press
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // If modal or mobile drawer is active, let them handle it themselves
+        if (showAuthModal || showSignOutModal || showSummaryModal || showMobileMenu) {
+          return;
+        }
+        // If on a subpage, exit/close it back to dashboard immediately
+        if (activeTab !== 'dashboard' && activeTab !== 'home') {
+          handleClosePage(e);
+        }
+      }
+    };
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [activeTab, showAuthModal, showSignOutModal, showSummaryModal, showMobileMenu, handleClosePage]);
 
   // Global Sync Error state
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -185,7 +298,6 @@ function AppContent() {
   // Completed Session Summary Modal State
   const [activeSummary, setActiveSummary] = useState<SessionSummary | null>(null);
   const [summaryTopics, setSummaryTopics] = useState<string[]>([]);
-  const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [activeSavedSessionId, setActiveSavedSessionId] = useState<string | null>(null);
   const [activeSummaryLocation, setActiveSummaryLocation] = useState<JournalLocation | null>(null);
 
@@ -484,10 +596,12 @@ function AppContent() {
 
   // AI Coach Messaging with Gemini Fallback
   const handleSendMessage = async (text: string) => {
+    if (!text || !text.trim() || isGenerating || isSummarizing) return;
+
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       role: 'user',
-      content: text,
+      content: text.trim(),
       timestamp: Date.now()
     };
 
@@ -738,7 +852,7 @@ function AppContent() {
 
   // Quick prompt injection to AI Coach
   const handleSelectPrompt = (prompt: string) => {
-    setActiveTab('home');
+    navigateToTab('home');
     handleSendMessage(prompt);
     // Smooth scroll to coach area if on page
     setTimeout(() => {
@@ -934,30 +1048,19 @@ function AppContent() {
     }
   }, [sessions]);
 
-  // Intelligent lazy-fetching for intelligence features to avoid quota burst
-  const initialFetchDone = useRef(false);
-
+  // Tab-driven lazy loading for AI Coach, Roadmap & Trends to eliminate unnecessary load-time API calls
   useEffect(() => {
-    if (!topicsLoading && !sessionsLoading && !initialFetchDone.current) {
-      initialFetchDone.current = true;
-      // Fetch home dashboard intelligence on mount
+    if ((activeTab === 'aicoach' || activeTab === 'coach') && !proactiveSuggestion && !proactiveLoading) {
       fetchProactiveSuggestion();
-      const timer = setTimeout(() => {
-        fetchWeakSkills();
-      }, 600);
-      return () => clearTimeout(timer);
+      fetchWeakSkills();
     }
-  }, [topicsLoading, sessionsLoading, fetchProactiveSuggestion, fetchWeakSkills]);
-
-  // Tab-driven lazy loading for Roadmap & Trends
-  useEffect(() => {
     if (activeTab === 'roadmap' && !careerIntelligence && !careerIntelligenceLoading) {
       fetchCareerIntelligence();
     }
     if (activeTab === 'trends' && !trendsData && !trendsLoading) {
       fetchTrendsAnalysis();
     }
-  }, [activeTab, careerIntelligence, careerIntelligenceLoading, trendsData, trendsLoading, fetchCareerIntelligence, fetchTrendsAnalysis]);
+  }, [activeTab, proactiveSuggestion, proactiveLoading, fetchProactiveSuggestion, fetchWeakSkills, careerIntelligence, careerIntelligenceLoading, trendsData, trendsLoading, fetchCareerIntelligence, fetchTrendsAnalysis]);
 
   // Handler: Start session from Proactive Focus Suggestion
   const handleStartProactiveFocus = (suggestedPrompt: string, recommendedTopics: string[]) => {
@@ -1024,7 +1127,7 @@ function AppContent() {
       <div className="hidden lg:block w-[3%] min-w-[54px] max-w-[64px] h-full shrink-0">
         <Sidebar 
           activeTab={activeTab} 
-          onSelectTab={setActiveTab} 
+          onSelectTab={navigateToTab} 
           userRole={userRole}
           user={currentUser}
           onOpenSignOutModal={() => setShowSignOutModal(true)}
@@ -1045,7 +1148,7 @@ function AppContent() {
           onOpenAuthModal={() => setShowAuthModal(true)}
           onGoogleSignIn={handleGoogleSignIn}
           onNavigateTab={(tab, targetId) => {
-            setActiveTab(tab);
+            navigateToTab(tab);
             if (targetId) {
               setTimeout(() => {
                 const el = document.getElementById(targetId);
@@ -1087,26 +1190,57 @@ function AppContent() {
         )}
 
         {/* Scrollable Dashboard View Body */}
-        <main className="flex-1 overflow-y-auto p-3.5 sm:p-5 lg:p-6 space-y-6 pb-24 lg:pb-8">
+        <main id="main-content-area" className="flex-1 overflow-y-auto p-3.5 sm:p-5 lg:p-6 space-y-6 pb-24 lg:pb-8">
           
-          {/* Initial Authenticated State & Content Loading Indicator */}
-          {isAuthLoading ? (
-            <div className="flex flex-col items-center justify-center min-h-[400px] h-full w-full py-16">
-              <LoadingState 
-                message="Synchronizing AI/ML Journal..." 
-                subMessage="Loading learning tracks, career telemetry, and session memories."
-                variant="ai"
-                size="lg"
-              />
+          {/* Sub-Page Back & Close Navigation Header */}
+          {activeTab !== 'dashboard' && activeTab !== 'home' && (
+            <div 
+              id="subpage-navigation-bar" 
+              className="flex items-center justify-between pb-3.5 mb-2 border-b border-[#142347] bg-[#040817]/90 backdrop-blur-md sticky top-0 z-30 -mt-1 pt-1"
+            >
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <button
+                  id="page-back-button"
+                  onClick={(e) => handleClosePage(e)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#091228] hover:bg-[#152347] border border-[#1a2d5c] hover:border-cyan-400/50 text-slate-300 hover:text-[#00F0FF] text-xs font-mono transition-all cursor-pointer group shadow-sm active:scale-95"
+                  aria-label="Go back to previous page"
+                  title="Back to previous page (Browser Back or Esc)"
+                >
+                  <ArrowLeft className="w-4 h-4 text-[#00F0FF] group-hover:-translate-x-1 transition-transform" />
+                  <span className="font-semibold">Back</span>
+                </button>
+
+                {/* Breadcrumb indicator */}
+                <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+                  <span className="text-slate-600">/</span>
+                  <span className="text-[#00F0FF] font-semibold">{tabTitles[activeTab] || activeTab}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono text-slate-500 uppercase tracking-wider hidden md:inline">
+                  Press <kbd className="px-1.5 py-0.5 rounded bg-[#091228] border border-[#1a2d5c] text-slate-300 text-[10px] font-mono">Esc</kbd> to return
+                </span>
+                <button
+                  id="page-close-button"
+                  onClick={(e) => handleClosePage(e)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#091228] hover:bg-[#152347] border border-[#1a2d5c] hover:border-cyan-400/50 text-slate-400 hover:text-white text-xs font-mono transition-all cursor-pointer active:scale-95"
+                  aria-label="Close page and return to Dashboard"
+                  title="Close and return to Dashboard (Esc)"
+                >
+                  <X className="w-4 h-4" />
+                  <span className="hidden sm:inline">Close</span>
+                </button>
+              </div>
             </div>
-          ) : (
-            <>
+          )}
+
           {/* TAB: DASHBOARD / HOME (Modern 3-Column Futuristic Layout) */}
           {(activeTab === 'dashboard' || activeTab === 'home') && (
             <DashboardView 
               onContinueLearning={handleSelectPrompt}
-              onWatchOverview={() => setActiveTab('curriculum')}
-              onNavigateTab={(tab) => setActiveTab(tab)}
+              onWatchOverview={() => navigateToTab('curriculum')}
+              onNavigateTab={(tab) => navigateToTab(tab)}
               onAICoachPrompt={handleSelectPrompt}
               topics={topics}
               sessions={sessions}
@@ -1311,7 +1445,8 @@ function AppContent() {
                 onOpenSignOutModal={() => setShowSignOutModal(true)}
                 onClearLocalHistory={() => setSessions([])}
                 onShowToast={showToast}
-                onClose={() => setActiveTab('dashboard')}
+                onClose={handleClosePage}
+                onBack={handleGoBack}
               />
             </React.Suspense>
           )}
@@ -1322,11 +1457,9 @@ function AppContent() {
               <AdminDashboardView 
                 currentUser={currentUser}
                 userRole={userRole}
-                onNavigateTab={(tab) => setActiveTab(tab)}
+                onNavigateTab={(tab) => navigateToTab(tab)}
               />
             </React.Suspense>
-          )}
-            </>
           )}
         </main>
 
@@ -1334,7 +1467,7 @@ function AppContent() {
         <div className="lg:hidden">
           <BottomNavBar 
             activeTab={activeTab} 
-            onSelectTab={setActiveTab} 
+            onSelectTab={navigateToTab} 
             onOpenMobileMenu={() => setShowMobileMenu(prev => !prev)}
             isMenuOpen={showMobileMenu}
           />
@@ -1348,7 +1481,7 @@ function AppContent() {
         activeTab={activeTab}
         userRole={userRole}
         onSelectTab={(tab) => {
-          setActiveTab(tab);
+          navigateToTab(tab);
           setShowMobileMenu(false);
         }}
       />
